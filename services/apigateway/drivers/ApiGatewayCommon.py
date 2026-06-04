@@ -12,7 +12,9 @@ class ApiGatewayCommon(Evaluator):
         self.apiClient = apiClient
         self.api = api
 
-        self._resourceName = api['Name']
+        # Safe lookup for Name - HTTP APIs (v2) may not have 'Name' field
+        # Fallback chain: Name -> ApiId -> 'unknown-api'
+        self._resourceName = api.get('Name') or api.get('ApiId') or 'unknown-api'
 
         return
     

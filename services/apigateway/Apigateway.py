@@ -56,21 +56,33 @@ class Apigateway(Service):
             objs = {}
             self.getApis()
             for api in self.apisv2:
-                objName = api.get('ProtocolType', 'UNKNOWN_PROTOCOL') + '::' + api.get('Name', api.get('ApiId', 'NO_NAME_NO_APIID'))
-                _pi('APIGateway', objName)
-                obj = ApiGatewayCommon(api, self.apiv2Client)
-                obj.run(self.__class__)
-                objs[objName] = obj.getInfo()
-                del obj
+                try:
+                    objName = api.get('ProtocolType', 'UNKNOWN_PROTOCOL') + '::' + api.get('Name', api.get('ApiId', 'NO_NAME_NO_APIID'))
+                    _pi('APIGateway', objName)
+                    obj = ApiGatewayCommon(api, self.apiv2Client)
+                    obj.run(self.__class__)
+                    objs[objName] = obj.getInfo()
+                    del obj
+                except Exception as e:
+                    # Log warning for individual API failures but continue scanning
+                    api_id = api.get('ApiId', 'unknown')
+                    print(f"[WARNING] Failed to process API Gateway v2 API {api_id}: {str(e)}")
+                    continue
 
             self.getRestApis()
             for api in self.apis:
-                objName = 'REST' + '::' + api['name']
-                _pi('APIGateway', objName)
-                obj = ApiGatewayRest(api, self.apiClient)
-                obj.run(self.__class__)
-                objs[objName] = obj.getInfo()
-                del obj
+                try:
+                    objName = 'REST' + '::' + api['name']
+                    _pi('APIGateway', objName)
+                    obj = ApiGatewayRest(api, self.apiClient)
+                    obj.run(self.__class__)
+                    objs[objName] = obj.getInfo()
+                    del obj
+                except Exception as e:
+                    # Log warning for individual API failures but continue scanning
+                    api_name = api.get('name', 'unknown')
+                    print(f"[WARNING] Failed to process API Gateway REST API {api_name}: {str(e)}")
+                    continue
         
             return objs
         
