@@ -10,16 +10,16 @@ class Config:
     }
 
     ADVISOR = {
-        'TITLE': 'Service Screener',
+        'TITLE': 'OTC Service Screener',
         'VERSION': '2.5.0',
-        'LAST_UPDATE': '30-Mar-2026'
+        'LAST_UPDATE': '15-May-2026'
     }
 
     ADMINLTE = {
         'VERSION': '3.1.0',
         'DATERANGE': '2014-2021',
-        'URL': 'https://adminlte.io',
-        'TITLE': 'AdminLTE.io'
+        'URL': 'https://olmo-tech.com',
+        'TITLE': 'Olmo Tech Consulting'
     }
 
     GLOBAL_SERVICES = [
@@ -32,6 +32,64 @@ class Config:
     ]
     
     CURRENT_REGION = 'us-east-1'
+    
+    # Framework descriptions mapping - includes Spanish descriptions for dashboard and tooltips
+    FRAMEWORK_DESCRIPTIONS = {
+        'MSR': {
+            'name': 'Well-Architected Pillars',
+            'spanish': 'Pilares Bien Arquitectados',
+            'description': 'Evaluación de 5 pilares: Excelencia Operativa, Seguridad, Confiabilidad, Eficiencia de Desempeño, Optimización de Costos',
+            'tooltip': 'Well-Architected Framework - Evaluación de 5 pilares: Excelencia Operativa, Seguridad, Confiabilidad, Eficiencia de Desempeño, Optimización de Costos'
+        },
+        'FTR': {
+            'name': 'Framework Technical Review',
+            'spanish': 'Revisión Técnica del Marco',
+            'description': 'Revisión Técnica del Marco',
+            'tooltip': 'Foundational Technical Review - Análisis profundo de arquitectura técnica'
+        },
+        'SSB': {
+            'name': 'Security Standards Baseline',
+            'spanish': 'Línea Base de Estándares de Seguridad',
+            'description': 'Conformidad con estándares mínimos de seguridad',
+            'tooltip': 'Security Standards Baseline - Conformidad con estándares mínimos de seguridad'
+        },
+        'WAFS': {
+            'name': 'WAF Secure',
+            'spanish': 'WAF Seguro',
+            'description': 'Validaciones específicas para AWS WAF',
+            'tooltip': 'Well-Architected Framework Summary - Validaciones específicas para AWS WAF'
+        },
+        'CIS': {
+            'name': 'CIS Benchmarks',
+            'spanish': 'Referencia CIS',
+            'description': 'Center for Internet Security - Controles de seguridad',
+            'tooltip': 'CIS Benchmarks — Center for Internet Security estándares de seguridad'
+        },
+        'NIST': {
+            'name': 'NIST Cybersecurity',
+            'spanish': 'Ciberseguridad NIST',
+            'description': 'National Institute of Standards and Technology',
+            'tooltip': 'NIST Cybersecurity Framework - Marco de ciberseguridad del Instituto Nacional de Estándares y Tecnología'
+        },
+        'RMIT': {
+            'name': 'RACI Matrix',
+            'spanish': 'Matriz RACI',
+            'description': 'Matriz de Responsabilidades y Rendición de Cuentas',
+            'tooltip': 'Risk Management in Technology (BNM) - Matriz RACI de responsabilidades'
+        },
+        'SPIP': {
+            'name': 'Security Policy Implementation',
+            'spanish': 'Implementación de Política de Seguridad',
+            'description': 'Cumplimiento de políticas de seguridad',
+            'tooltip': 'Security & Privacy Implementation Program - Implementación de Política de Seguridad'
+        },
+        'RBI': {
+            'name': 'Reserve Bank of India',
+            'spanish': 'Banco de la Reserva India',
+            'description': 'Banco de la Reserva India - Requisitos regulatorios',
+            'tooltip': 'Reserve Bank of India Guidelines - Requisitos regulatorios de RBI'
+        }
+    }
     
     @staticmethod
     def init():
@@ -109,7 +167,13 @@ try:
     if configHasInit:
         pass
 except NameError:
-    dashboard = {}
+    dashboard = {
+        'HEALTH_SCORE': {
+            'percentage': 0,
+            'grade': 'A',
+            'raw_score': 0
+        }
+    }
     Config.init()
     configHasInit = True
 

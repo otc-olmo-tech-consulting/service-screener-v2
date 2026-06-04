@@ -6,6 +6,7 @@ import traceback
 
 import time
 from utils.Config import Config
+import utils.Config as cfg
 from services.Cloudwatch import Cloudwatch
 from services.Reporter import Reporter
 from services.PageBuilder import PageBuilder
@@ -207,6 +208,9 @@ class Screener:
 
         summary = Config.get("SCREENER-SUMMARY")
         excelObj = ExcelBuilder(stsInfo["Account"], " ".join(params))
+        
+        # Initialize service_reporters dict to store reporters for later use
+        service_reporters = {}
 
         for service, dataSets in contexts.items():
             resultSets = dataSets['results']
@@ -214,6 +218,9 @@ class Screener:
 
             reporter = Reporter(service)
             reporter.process(resultSets).processCharts(chartSets).getSummary().getDetails()
+            
+            # Store reporter for later use in extracting top findings
+            service_reporters[service] = reporter
 
             ## <TODO> -- verification
             ## Maybe need to import module, to validate later
@@ -265,6 +272,15 @@ class Screener:
 
         # serviceStat = Config.get('cli_services')
         # print(serviceStat)
+        
+        # Store reporters in Config for use in extracting top findings
+        Config.set('service_reporters', service_reporters)
+        
+        # Extract top 5 critical findings from aggregated results
+        from services.Reporter import extract_top_critical_findings
+        top_findings = extract_top_critical_findings(limit=5)
+        cfg.dashboard['TOP_FINDINGS'] = top_findings
+        
         dashPB = DashboardPageBuilder('index', [])
         dashPB.buildPage()
 

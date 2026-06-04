@@ -7,6 +7,142 @@ import utils.Config as cfg
 from utils.Tools import _warn, _info
 import constants as _C
 
+
+def calculate_health_score(severity_counts):
+    """
+    Calculate health score from severity distribution.
+    
+    Args:
+        severity_counts: dict with keys 'H', 'M', 'L', 'I' and counts
+    
+    Returns:
+        dict with 'percentage', 'grade', 'raw_score'
+    """
+    total_findings = sum(severity_counts.values())
+    
+    # If no findings, return perfect score
+    if total_findings == 0:
+        return {
+            'percentage': 100.0,
+            'grade': 'A',
+            'raw_score': 0
+        }
+    
+    # Weighted formula: (H × 3) + (M × 1.5) + (L × 0.5)
+    raw_score = (severity_counts.get('H', 0) * 3) + \
+                (severity_counts.get('M', 0) * 1.5) + \
+                (severity_counts.get('L', 0) * 0.5)
+    
+    # Maximum possible score (all findings are High severity)
+    max_possible = total_findings * 3
+    
+    # Calculate health percentage using formula: 100 - (raw_score / max_possible × 100)
+    # This inverts the scale so higher percentage = better health
+    health_percentage = 100 - (raw_score / max_possible * 100)
+    health_percentage = max(0, round(health_percentage, 1))
+    
+    # Grade mapping (A=90-100%, B=80-89%, C=70-79%, D=60-69%, F<60%)
+    if health_percentage >= 90:
+        grade = 'A'
+    elif health_percentage >= 80:
+        grade = 'B'
+    elif health_percentage >= 70:
+        grade = 'C'
+    elif health_percentage >= 60:
+        grade = 'D'
+    else:
+        grade = 'F'
+    
+    return {
+        'percentage': health_percentage,
+        'grade': grade,
+        'raw_score': round(raw_score, 2)
+    }
+
+
+def extract_top_critical_findings(limit=5):
+    """
+    Extract top N critical (HIGH severity) findings from aggregated dashboard results.
+    
+    This function collects all HIGH severity findings from the dashboard data structure,
+    sorted by the number of affected resources (most impactful first).
+    
+    The findings are aggregated by (service, rule) to show the most critical issues
+    with their descriptions.
+    
+    Args:
+        limit: Maximum number of findings to return (default: 5)
+    
+    Returns:
+        List of dicts with structure:
+        {
+            'rank': int (1-based),
+            'service': str (service name),
+            'rule': str (check/rule ID),
+            'description': str (finding description),
+            'severity': str ('H' for HIGH),
+            'affected_resources': int (count of affected resources)
+        }
+        
+        If no HIGH severity findings exist, returns an empty list.
+    """
+    dashboard = cfg.dashboard
+    top_findings = []
+    finding_dict = {}  # Dict to aggregate findings by (service, rule)
+    
+    # Collect reporter instances from Config
+    # The reporters have been stored during service scanning
+    service_reporters = Config.get('service_reporters', {})
+    
+    # Extract HIGH severity findings from service reporters
+    for service, reporter in service_reporters.items():
+        if not hasattr(reporter, 'summaryRegion') or not hasattr(reporter, 'config'):
+            continue
+        
+        # Iterate through all rules with failures
+        for rule_id, regions_dict in reporter.summaryRegion.items():
+            # Check if this rule has HIGH severity
+            if reporter._checkCriticality(rule_id) != 'H':
+                continue
+            
+            # Count total affected resources for this rule
+            total_affected = 0
+            for region, identifiers in regions_dict.items():
+                total_affected += len(identifiers)
+            
+            if total_affected > 0:
+                # Get rule description from config
+                description = reporter._getConfigValue(rule_id, '^description') or 'No description available'
+                
+                # Create finding entry (use rule_id as key to aggregate)
+                finding_key = f"{service}::{rule_id}"
+                
+                if finding_key not in finding_dict:
+                    finding_dict[finding_key] = {
+                        'service': service,
+                        'rule': rule_id,
+                        'description': description,
+                        'severity': 'H',
+                        'affected_resources': total_affected
+                    }
+    
+    # Convert dict to sorted list
+    finding_list = list(finding_dict.values())
+    
+    # Sort by affected_resources count (descending) to get most impactful first
+    sorted_findings = sorted(
+        finding_list,
+        key=lambda x: x['affected_resources'],
+        reverse=True
+    )
+    
+    # Limit to top N and add rank
+    for rank, finding in enumerate(sorted_findings[:limit], 1):
+        finding['rank'] = rank
+        top_findings.append(finding)
+    
+    return top_findings
+
 class Reporter:
     def __init__(self, service):
         self.summary = {}
@@ -26,6 +162,9 @@ class Reporter:
         self.suppressedSummaryRegion = {}
         self.suppressedDetail = {}
         self.suppressedCardSummary = {}
+        
+        # Track severity counts for health score calculation
+        self.severity_counts = {'H': 0, 'M': 0, 'L': 0, 'I': 0}
         
         folder = service
         if service in Config.KEYWORD_SERVICES:
@@ -67,6 +206,15 @@ class Reporter:
 
     def process(self, serviceObjs):
         dashboard = cfg.dashboard
+        
+        # Ensure HEALTH_SCORE structure is always present
+        if 'HEALTH_SCORE' not in dashboard:
+            dashboard['HEALTH_SCORE'] = {
+                'percentage': 0,
+                'grade': 'A',
+                'raw_score': 0
+            }
+        
         total_suppressed = 0
         
         for region, objs in serviceObjs.items():
@@ -246,6 +394,10 @@ class Reporter:
                     dashboard['CRITICALITY'][region][critical] = 0
                     
                 dashboard['CRITICALITY'][region][critical] += itemSize
+                
+                # Track severity counts for health score calculation
+                if critical in self.severity_counts:
+                    self.severity_counts[critical] += itemSize
 
                 if critical == 'H':
                     dashboard['SERV'][self.service][region]['H'] += itemSize
@@ -381,6 +533,12 @@ class Reporter:
         del self.summary
         del self.suppressedSummaryRegion
         del self.suppressedSummary
+        
+        # Calculate and store health score in dashboard
+        health_score = calculate_health_score(self.severity_counts)
+        if 'HEALTH_SCORE' not in dashboard:
+            dashboard['HEALTH_SCORE'] = {}
+        dashboard['HEALTH_SCORE'] = health_score
         
         return self
         
