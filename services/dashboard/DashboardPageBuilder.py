@@ -29,14 +29,18 @@ class DashboardPageBuilder(PageBuilder):
     
     def generateHealthScoreCard(self):
         """
-        Generate the health score card HTML.
+        Generate the enhanced health score card with executive narrative (Task 2.14).
         
-        Retrieves health score from cfg.dashboard and renders it as a prominent card
-        positioned above WAF pillar tiles. Uses template variables for percentage, grade,
-        and color injection.
+        Renders a prominent card with:
+        - Executive Spanish terminology for grades
+        - Critical findings count subtitle
+        - Timestamp and account ID footer
+        - Mini-tiles for H/M/L severity counts
+        - Horizontal progress bar with 50%/75% markers
+        - Dynamic gradient coloring
         
         Returns:
-            str: HTML for health score card with template variables injected
+            str: HTML for enhanced health score card
         """
         dashboard = cfg.dashboard.copy()
         health_score = dashboard.get('HEALTH_SCORE', {})
@@ -46,32 +50,146 @@ class DashboardPageBuilder(PageBuilder):
         grade = health_score.get('grade', 'A').upper()
         raw_score = health_score.get('raw_score', 0)
         
-        # Format percentage with 1 decimal place as per requirement
+        # Format percentage with 1 decimal place
         if isinstance(percentage, (int, float)):
             percentage_str = f"{percentage:.1f}"
+            percentage_val = float(percentage)
         else:
             percentage_str = "100.0"
+            percentage_val = 100.0
         
-        # Map grade to Bootstrap color class and status label
-        color_class, status_label = self.get_health_color_and_status(grade)
+        # Get severity counts from dashboard
+        severity_counts = {'H': 0, 'M': 0, 'L': 0}
+        hri_sets = {'H': 0, 'M': 0, 'L': 0, 'I': 0}
+        total_findings = 0
         
-        # Build health score card with template variables
-        # {$HEALTH_PERCENTAGE}, {$HEALTH_GRADE}, {$HEALTH_COLOR}
+        if 'CRITICALITY' in dashboard:
+            for region, details in dashboard['CRITICALITY'].items():
+                for cat, cnt in details.items():
+                    if cat in hri_sets:
+                        hri_sets[cat] += cnt
+                        total_findings += cnt
+        
+        # Extract H, M, L counts
+        severity_counts['H'] = hri_sets.get('H', 0)
+        severity_counts['M'] = hri_sets.get('M', 0)
+        severity_counts['L'] = hri_sets.get('L', 0)
+        
+        # Get account ID and current timestamp
+        account_id = Config.get('accountId', 'N/A')
+        current_time = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Map grade to Spanish terminology and gradient colors
+        grade_map = {
+            'A': {
+                'spanish': 'Postura Óptima',
+                'gradient_start': '#28a745',
+                'gradient_end': '#20c997',
+                'color_class': 'success'
+            },
+            'B': {
+                'spanish': 'Postura Buena',
+                'gradient_start': '#0066cc',
+                'gradient_end': '#0099ff',
+                'color_class': 'info'
+            },
+            'C': {
+                'spanish': 'Requiere Mejoras',
+                'gradient_start': '#ff9900',
+                'gradient_end': '#ffb84d',
+                'color_class': 'warning'
+            },
+            'D': {
+                'spanish': 'Requiere Mejoras',
+                'gradient_start': '#ff9900',
+                'gradient_end': '#ffb84d',
+                'color_class': 'warning'
+            },
+            'F': {
+                'spanish': 'Atención Urgente',
+                'gradient_start': '#dc3545',
+                'gradient_end': '#ff6b6b',
+                'color_class': 'danger'
+            }
+        }
+        
+        grade_info = grade_map.get(grade, grade_map['F'])
+        spanish_grade = grade_info['spanish']
+        gradient_start = grade_info['gradient_start']
+        gradient_end = grade_info['gradient_end']
+        color_class = grade_info['color_class']
+        
+        # Calculate marker positions for progress bar (50% and 75%)
+        marker_50 = 50
+        marker_75 = 75
+        
+        # Build HTML for health score card with all enhancements
         card_html = f"""
 <div class="row" style="margin-bottom: 20px;">
     <div class="col-md-12">
-        <div class="card bg-gradient-{color_class}" style="border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            <div class="card-body" style="padding: 30px;">
+        <div class="card" style="border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.15); overflow: hidden;">
+            <!-- Card Header with Gradient -->
+            <div style="background: linear-gradient(135deg, {gradient_start} 0%, {gradient_end} 100%); padding: 25px; color: white;">
                 <div class="row" style="align-items: center;">
-                    <div class="col-md-4">
-                        <h5 style="margin: 0; font-weight: bold; color: rgba(255,255,255,0.9);">Health Score</h5>
+                    <div class="col-md-6">
+                        <h4 style="margin: 0 0 8px 0; font-weight: bold; color: rgba(255,255,255,0.95);">Salud Operativa del Entorno AWS</h4>
+                        <p style="margin: 0; font-size: 0.9em; color: rgba(255,255,255,0.8);">{severity_counts['H']} hallazgos críticos requieren acción inmediata · {total_findings} hallazgos totales</p>
                     </div>
-                    <div class="col-md-8" style="text-align: right;">
-                        <div style="font-size: 2.5em; font-weight: bold; margin: 0; color: rgba(255,255,255,1);">{percentage_str}%</div>
-                        <div style="font-size: 1.1em; margin-top: 5px; margin-bottom: 5px; color: rgba(255,255,255,0.95);">Grade <span style="font-weight: bold;">{grade}</span></div>
-                        <div style="font-size: 0.9em; color: rgba(255,255,255,0.85);">{status_label}</div>
+                    <div class="col-md-6" style="text-align: right;">
+                        <div style="font-size: 2.8em; font-weight: bold; color: rgba(255,255,255,1); margin: 0; line-height: 1;">{percentage_str}%</div>
+                        <div style="font-size: 1.15em; font-weight: 600; color: rgba(255,255,255,0.95); margin-top: 5px;">{spanish_grade}</div>
                     </div>
                 </div>
+            </div>
+            
+            <!-- Card Body with Mini-tiles and Progress Bar -->
+            <div class="card-body" style="padding: 20px;">
+                <!-- Mini-tiles for H/M/L counts -->
+                <div class="row" style="margin-bottom: 20px; gap: 10px;">
+                    <div class="col-auto" style="flex: 0 1 calc(33.333% - 7px); text-align: center; padding: 10px; background-color: #f8f9fa; border-radius: 6px; border-left: 4px solid #dc3545;">
+                        <div style="font-size: 1.5em; font-weight: bold; color: #dc3545;">
+                            <i class="fas fa-ban"></i> {severity_counts['H']}
+                        </div>
+                        <div style="font-size: 0.85em; color: #666; margin-top: 4px;">Críticos</div>
+                    </div>
+                    <div class="col-auto" style="flex: 0 1 calc(33.333% - 7px); text-align: center; padding: 10px; background-color: #f8f9fa; border-radius: 6px; border-left: 4px solid #ffc107;">
+                        <div style="font-size: 1.5em; font-weight: bold; color: #ffc107;">
+                            <i class="fas fa-exclamation-triangle"></i> {severity_counts['M']}
+                        </div>
+                        <div style="font-size: 0.85em; color: #666; margin-top: 4px;">Moderados</div>
+                    </div>
+                    <div class="col-auto" style="flex: 0 1 calc(33.333% - 7px); text-align: center; padding: 10px; background-color: #f8f9fa; border-radius: 6px; border-left: 4px solid #17a2b8;">
+                        <div style="font-size: 1.5em; font-weight: bold; color: #17a2b8;">
+                            <i class="fas fa-eye"></i> {severity_counts['L']}
+                        </div>
+                        <div style="font-size: 0.85em; color: #666; margin-top: 4px;">Bajos</div>
+                    </div>
+                </div>
+                
+                <!-- Horizontal Progress Bar with Markers -->
+                <div style="margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <div style="font-size: 0.85em; color: #666; font-weight: 500;">Progreso de Conformidad</div>
+                        <div style="font-size: 0.85em; color: #666;">{percentage_str}%</div>
+                    </div>
+                    <div style="position: relative; height: 24px; background-color: #e9ecef; border-radius: 12px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+                        <!-- Progress fill -->
+                        <div style="position: absolute; left: 0; top: 0; height: 100%; width: {percentage_val}%; background: linear-gradient(90deg, {gradient_start} 0%, {gradient_end} 100%); border-radius: 12px;"></div>
+                        
+                        <!-- 50% marker -->
+                        <div style="position: absolute; left: 50%; top: 0; height: 100%; width: 2px; background-color: rgba(0,0,0,0.2); z-index: 2;"></div>
+                        <div style="position: absolute; left: 50%; top: -18px; transform: translateX(-50%); font-size: 0.7em; color: #666; font-weight: bold; white-space: nowrap;">50%</div>
+                        
+                        <!-- 75% marker -->
+                        <div style="position: absolute; left: 75%; top: 0; height: 100%; width: 2px; background-color: rgba(0,0,0,0.2); z-index: 2;"></div>
+                        <div style="position: absolute; left: 75%; top: -18px; transform: translateX(-50%); font-size: 0.7em; color: #666; font-weight: bold; white-space: nowrap;">75%</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card Footer with Analysis Info -->
+            <div style="background-color: #f8f9fa; padding: 12px 20px; border-top: 1px solid #dee2e6; font-size: 0.85em; color: #666;">
+                <i class="fas fa-clock"></i> Análisis: {current_time} UTC · <i class="fas fa-lock"></i> Cuenta: {account_id}
             </div>
         </div>
     </div>
@@ -133,15 +251,23 @@ class DashboardPageBuilder(PageBuilder):
         items = []
         
         pid = self.getHtmlId('criticalityCount')
-        card = self.generateCard(pid=pid, html=xhtml, cardClass='danger', title='No. Criticality', titleBadge='', collapse=False, noPadding=False)
+        card = self.generateCard(pid=pid, html=xhtml, cardClass='danger', title='Hallazgos por Nivel de Severidad', titleBadge='', collapse=False, noPadding=False)
         securityBox = self.generateSecurityBigBox(dataSets['S'])
         
+        # Add visual separator and label above Security box (Task 2.15)
         customHtml = f"""
 <div class="row">
     <div class="col-sm-8">
         {card}
     </div>
-    {securityBox}
+    <div class="col-sm-4">
+        <!-- Separator with label "Pilar con Mayor Riesgo" -->
+        <div style="padding-bottom: 10px; margin-bottom: 10px; border-bottom: 2px solid #dc3545; display: flex; align-items: center;">
+            <i class="fas fa-exclamation-circle" style="color: #dc3545; margin-right: 8px;"></i>
+            <span style="font-weight: 600; color: #333; font-size: 0.95em;">Pilar con Mayor Riesgo</span>
+        </div>
+        {securityBox}
+    </div>
 </div>
 """
         output.append(customHtml)
@@ -211,22 +337,22 @@ class DashboardPageBuilder(PageBuilder):
         # card = self.generateCard(pid=pid, html=html, cardClass='danger', title='No. Criticality', titleBadge='', collapse=False, noPadding=False)
                 
         html = self.generateDonutPieChart(filterDonutL, 'hriByRegion', 'doughnut')
-        card = self.generateCard(pid=self.getHtmlId('chartServRegion'), html=html, cardClass='warning', title='High Risk - Group by Region', titleBadge='', collapse=True, noPadding=False)
+        card = self.generateCard(pid=self.getHtmlId('chartServRegion'), html=html, cardClass='warning', title='Distribución de Riesgos Críticos por Región', titleBadge='', collapse=True, noPadding=False)
         items = [[card, '']]
         
         html = self.generateDonutPieChart(filterDonutR, 'hriByService', 'pie')
-        card = self.generateCard(pid=self.getHtmlId('pieHriByService'), html=html, cardClass='warning', title='High Risk - Group by Service', titleBadge='', collapse=True, noPadding=False)
+        card = self.generateCard(pid=self.getHtmlId('pieHriByService'), html=html, cardClass='warning', title='Servicios con Mayor Riesgo Crítico', titleBadge='', collapse=True, noPadding=False)
         items.append([card, ''])
         
         output.append(self.generateRowWithCol(size=6, items=items, rowHtmlAttr="data-context='chartHRICount'"))
         
         items = []
         html = self.generateBarChart(serviceLabels, dataSetsL, 'csr')
-        card = self.generateCard(pid=self.getHtmlId('chartServRegion'), html=html, cardClass='info', title='Chart by Serv by Region', titleBadge='', collapse=True, noPadding=False)
+        card = self.generateCard(pid=self.getHtmlId('chartServRegion'), html=html, cardClass='info', title='Cobertura del Análisis por Servicio', titleBadge='', collapse=True, noPadding=False)
         items.append([card, ''])
         
         html = self.generateBarChart(regionLabels, dataSetsR, 'crs')
-        card = self.generateCard(pid=self.getHtmlId('chartRegionServ'), html=html, cardClass='info', title='Chart by Region by Serv', titleBadge='', collapse=True, noPadding=False)
+        card = self.generateCard(pid=self.getHtmlId('chartRegionServ'), html=html, cardClass='info', title='Cobertura del Análisis por Región', titleBadge='', collapse=True, noPadding=False)
         items.append([card, ''])
         
         output.append(self.generateRowWithCol(size=6, items=items, rowHtmlAttr="data-context='chartCount'"))
@@ -290,13 +416,13 @@ class DashboardPageBuilder(PageBuilder):
         
     def getHRIInfo(self, cat, cnt, total):
         attrArr = {
-            'H': ['danger', 'High', 'ban'],
-            'M': ['warning', 'Medium', 'exclamation-triangle'],
-            'L': ['info', 'Low', 'eye'],
-            'I': ['primary', 'Informational', 'info-circle']
+            'H': ['danger', 'High', 'ban', 'Crítico — Acción inmediata'],
+            'M': ['warning', 'Medium', 'exclamation-triangle', 'Moderado — Planificar en 30 días'],
+            'L': ['info', 'Low', 'eye', 'Bajo — Revisar en 90 días'],
+            'I': ['primary', 'Informational', 'info-circle', 'Informativo — Referencia']
         }
         
-        colorClass, title, icon = attrArr[cat]
+        colorClass, title, icon, action_label = attrArr[cat]
         
         percentile = round(cnt * 100 / total)
         
@@ -304,6 +430,7 @@ class DashboardPageBuilder(PageBuilder):
 <dt class="col-sm-4"><a style='cursor: pointer; color: black;' target=_blank rel='noopener noreferrer' href='CPFindings.html#{title}'><i class="fas fa-{icon}"></i> {title}</dt></a>
 <dd class="col-sm-8" style='text-align: right'>{cnt}</dd>
 <dt class="col-sm-12">
+<div style="font-size: 11px; color: #6c757d; margin-bottom: 4px; padding-left: 4px;">{action_label}</div>
 <div class="progress mb-3">
   <div class="progress-bar bg-{colorClass}" role="progressbar" aria-valuenow="{percentile}" aria-valuemin="0"
 	   aria-valuemax="100" style="width: {percentile}%">
@@ -322,85 +449,111 @@ class DashboardPageBuilder(PageBuilder):
         infoCnt = cnt['I']
         
         output = f"""
-<div class="col-sm-4" style="cursor:pointer;" onClick="window.open('CPFindings.html#Security', '_blank')">
-	<div class="small-box bg-danger" style='height: 357px'>
-	  <div class="inner">
-		<h3>{total}</h3>
-		<p>Security</p>
-	  </div>
-	  <div class="icon">
-		<i style='color: #dfdfdf' class="fas fa-skull-crossbones"></i>
-	  </div>
-	  <div class="row" style="background-color: rgba(0,0,0,.1); text-align: center; font-size:26px; margin: 1px; margin-top: 167px">
-	    <div class="col-lg-6 col-sm-6"><i class="fas fa-ban"></i> {highCnt}</div>
-        <div class="col-lg-6 col-sm-6"><i class="fas fa-exclamation-triangle"></i> {mediumCnt}</div>
-        <div class="col-lg-6 col-sm-6"><i class="fas fa-eye"></i> {lowCnt}</div>
-        <div class="col-lg-6 col-sm-6"><i class="fas fa-info-circle"></i> {infoCnt}</div>
-	  </div>
-	</div>
+<div class="small-box bg-danger" style='height: 357px'>
+  <div class="inner">
+    <h3>{total}</h3>
+    <p>Security</p>
+    <p class="waf-pillar-description" style="font-size: 0.85em; font-weight: normal; color: rgba(255,255,255,0.7); line-height: 1.3; word-wrap: break-word; margin: 4px 0 0 0; padding: 0 2px;">pilar con más hallazgos</p>
+  </div>
+  <div class="icon">
+    <i style='color: #dfdfdf' class="fas fa-skull-crossbones"></i>
+  </div>
+  <div class="row" style="background-color: rgba(0,0,0,.1); text-align: center; font-size:26px; margin: 1px; margin-top: 167px">
+    <div class="col-lg-6 col-sm-6"><i class="fas fa-ban"></i> {highCnt}</div>
+    <div class="col-lg-6 col-sm-6"><i class="fas fa-exclamation-triangle"></i> {mediumCnt}</div>
+    <div class="col-lg-6 col-sm-6"><i class="fas fa-eye"></i> {lowCnt}</div>
+    <div class="col-lg-6 col-sm-6"><i class="fas fa-info-circle"></i> {infoCnt}</div>
+  </div>
 </div>
 """
         return output
 
-    def generateTopFindingsBanner(self):
+    def _getTop5HighFindings(self):
         """
-        Generate the top 5 critical findings banner HTML.
+        Extract top 5 services by HIGH severity count from cfg.dashboard['SERV'].
         
-        Retrieves top findings from cfg.dashboard and renders them as an alert card
-        with collapsible header and finding item rows.
+        This method aggregates HIGH severity findings across all regions for each service
+        and returns the top 5 services sorted by high count in descending order.
         
         Returns:
-            str: HTML for top 5 findings banner with template variables injected
+            list: List of tuples: [(service_name, high_count), ...]
+                  Sorted by high_count descending, limited to top 5 services
+                  Returns empty list if no HIGH severity findings exist
+        
+        Example:
+            [('IAM', 34), ('EC2', 28), ('S3', 15), ('RDS', 12), ('Lambda', 8)]
         """
         dashboard = cfg.dashboard.copy()
-        top_findings = dashboard.get('TOP_FINDINGS', [])
+        serv_data = dashboard.get('SERV', {})
         
-        # Determine if we have findings
-        has_findings = len(top_findings) > 0
-        show_no_findings_style = "" if has_findings else "display:none;"
-        show_findings_display = "none" if not has_findings else ""
+        # Aggregate HIGH count by service across all regions
+        service_high_counts = {}
         
-        # Generate finding rows
+        for service_name, regions_dict in serv_data.items():
+            high_count = 0
+            
+            # Sum HIGH findings across all regions for this service
+            for region, region_data in regions_dict.items():
+                if isinstance(region_data, dict):
+                    high_count += region_data.get('H', 0)
+            
+            if high_count > 0:
+                service_high_counts[service_name] = high_count
+        
+        # Sort by high_count descending and limit to top 5
+        sorted_services = sorted(
+            service_high_counts.items(),
+            key=lambda x: x[1],
+            reverse=True
+        )
+        
+        return sorted_services[:5]
+
+    def generateTopFindingsBanner(self):
+        """
+        Generate the top 5 critical findings banner with real data from Python.
+        
+        Displays the top 5 services by HIGH severity count with static HTML
+        (no JavaScript-driven data). Each service is listed with its HIGH finding count
+        and a link to the service detail page.
+        
+        Spanish titles and subtitles:
+        - Title: "Prioridades de Acción Inmediata"
+        - Subtitle: "Servicios que requieren atención prioritaria del equipo técnico"
+        
+        Format: "[SERVICE_UPPERCASE] — [N hallazgos críticos] — [link to {service}.html]"
+        
+        Collapsible/expandable: Defaults to expanded state with Bootstrap collapse functionality.
+        
+        Returns:
+            str: Static HTML with real service data embedded, CSS, and JavaScript for collapse
+        """
+        # Get top 5 services by HIGH severity count
+        top_services = self._getTop5HighFindings()
+        has_findings = len(top_services) > 0
+        
+        # Generate finding rows for each service
         findings_rows = []
         if has_findings:
-            for idx, finding in enumerate(top_findings[:5], 1):
-                service = finding.get('service', 'Unknown').lower()
-                rule = finding.get('rule', 'unknown_rule')
-                description = finding.get('description', 'No description available')
-                affected_resources = finding.get('affected_resources', 0)
+            for idx, (service_name, high_count) in enumerate(top_services, 1):
+                service_lower = service_name.lower()
+                service_page = f"{service_lower}.html"
                 
-                # Generate the service page link with rule anchor
-                service_page = f"{service}.html"
-                rule_anchor = rule.replace('_', '-')  # Standardize anchor format
-                link_href = f"{service_page}#{rule_anchor}"
-                
-                # Format resource count text
-                resource_text = "1 resource affected" if affected_resources == 1 else f"{affected_resources} resources affected"
-                
-                # Escape HTML in description
-                description_safe = self._escape_html(description)
+                # Format the text as: "SERVICE — N hallazgos críticos — link"
+                hallazgos_text = "1 hallazgo crítico" if high_count == 1 else f"{high_count} hallazgos críticos"
                 
                 finding_row = f"""
                 <div class="finding-item">
                     <div class="finding-rank">{idx}</div>
                     <div class="finding-content">
                         <div class="finding-info">
-                            <span class="finding-service">{service}</span>
-                            <span class="finding-rule">{rule}</span>
-                        </div>
-                        <div class="finding-description">
-                            {description_safe}
-                        </div>
-                        <div class="finding-metadata">
-                            <div class="finding-resources">
-                                <i class="fas fa-server"></i>
-                                <span>{resource_text}</span>
-                            </div>
+                            <span class="finding-service">{service_name.upper()}</span>
+                            <span class="finding-rule">{hallazgos_text}</span>
                         </div>
                     </div>
                     <div class="finding-button-group">
-                        <a href="{link_href}" class="btn btn-sm btn-finding-detail" target="_blank" rel="noopener noreferrer">
-                            <i class="fas fa-external-link-alt"></i> Ver detalle
+                        <a href="{service_page}#H" class="btn btn-sm btn-finding-detail" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-external-link-alt"></i> Ver detalles
                         </a>
                     </div>
                 </div>
@@ -408,42 +561,293 @@ class DashboardPageBuilder(PageBuilder):
                 findings_rows.append(finding_row)
         
         findings_rows_html = "".join(findings_rows)
-        findings_count = len(top_findings[:5])
+        findings_count = len(top_services)
         
-        # Load template
-        try:
-            template_path = 'services/dashboard/top_findings_banner.template.html'
-            with open(template_path, 'r', encoding='utf-8') as f:
-                template = f.read()
-        except (FileNotFoundError, IOError):
-            # Fallback if template file not found
-            template = self._get_fallback_banner_template()
+        # Show/hide sections based on findings
+        show_findings_style = "display: block;" if has_findings else "display: none;"
+        show_no_findings_style = "display: none;" if has_findings else "display: block;"
         
-        # Replace template variables
-        banner_html = template.replace('{$TOP_FINDINGS_COUNT}', str(findings_count))
-        banner_html = banner_html.replace('{$TOP_FINDINGS_ROWS}', findings_rows_html)
-        banner_html = banner_html.replace('{$SHOW_NO_FINDINGS}', show_no_findings_style)
+        # Generate unique IDs for banner and collapse target
+        banner_id = "top-findings-banner"
+        content_id = f"{banner_id}-content-collapse"
         
-        # Add JavaScript to handle empty findings display
-        js_code = f"""
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {{
-                var hasFindings = {str(has_findings).lower()};
-                var emptyDiv = document.getElementById('top-findings-empty');
-                var listDiv = document.getElementById('top-findings-list');
-                
-                if (hasFindings) {{
-                    if (emptyDiv) emptyDiv.style.display = 'none';
-                    if (listDiv) listDiv.style.display = 'block';
-                }} else {{
-                    if (emptyDiv) emptyDiv.style.display = 'block';
-                    if (listDiv) listDiv.style.display = 'none';
+        # Build static HTML banner with Bootstrap collapse functionality
+        banner_html = f"""
+        <div class="row" id="{banner_id}-row" style="margin-top: 20px; margin-bottom: 20px;">
+            <div class="col-12">
+                <!-- Alert Card with Top 5 Services -->
+                <div class="alert alert-danger alert-dismissible fade show" id="{banner_id}" role="alert" style="border-left: 4px solid #dc3545; box-shadow: 0 2px 4px rgba(220,53,69,0.1); margin-bottom: 0;">
+                    <!-- Header with icon, title, and collapse toggle -->
+                    <div class="alert-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid rgba(220,53,69,0.2);">
+                        <div style="display: flex; align-items: center; flex-grow: 1;">
+                            <i class="icon fas fa-fire" style="font-size: 1.3em; margin-right: 10px; color: #dc3545;"></i>
+                            <div style="flex-grow: 1;">
+                                <h5 style="margin: 0 0 4px 0; font-weight: bold; color: #721c24;">
+                                    Prioridades de Acción Inmediata
+                                </h5>
+                                <p style="margin: 0; font-size: 0.85em; color: #721c24; font-weight: 500;">
+                                    Servicios que requieren atención prioritaria del equipo técnico
+                                </p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
+                            <!-- Collapse toggle button -->
+                            <button class="btn btn-sm btn-link-collapse" type="button" data-toggle="collapse" data-target="#{content_id}" 
+                                    aria-expanded="true" aria-controls="{content_id}" style="color: #721c24; text-decoration: none; padding: 0; font-size: 1.2em;">
+                                <i class="fas fa-chevron-up" style="transition: transform 0.3s ease;"></i>
+                            </button>
+                            <!-- Dismiss button -->
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="color: #721c24; margin: 0; padding: 0; font-size: 1.5em;">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Success message (shown when no findings) -->
+                    <div id="{banner_id}-empty" style="{show_no_findings_style}">
+                        <div style="text-align: center; padding: 20px;">
+                            <i class="fas fa-check-circle" style="font-size: 2em; color: #28a745; margin-bottom: 10px;"></i>
+                            <p style="color: #155724; margin: 10px 0 0 0;">
+                                <strong>¡Excelente noticia!</strong> No se detectaron hallazgos críticos en esta evaluación.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Findings list (collapsible, static HTML with real data) -->
+                    <div class="collapse show" id="{content_id}">
+                        <div id="{banner_id}-content" style="{show_findings_style}">
+                            <div class="findings-container" style="background-color: rgba(220,53,69,0.03); border-radius: 4px; padding: 0;">
+                                {findings_rows_html}
+                            </div>
+                            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(220,53,69,0.1);">
+                                <small style="color: #721c24;">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>Se muestran los {findings_count} principales servicios con hallazgos críticos.</strong>
+                                    Revise las páginas de detalle de servicio para hallazgos adicionales.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """
+        
+        # Add CSS for styling
+        css_code = """
+        <style>
+            /* Finding item row styles */
+            .finding-item {{
+                display: flex;
+                align-items: flex-start;
+                padding: 12px;
+                border-bottom: 1px solid rgba(220,53,69,0.15);
+                background-color: transparent;
+                transition: background-color 0.2s ease;
+            }}
+
+            .finding-item:last-child {{
+                border-bottom: none;
+            }}
+
+            .finding-item:hover {{
+                background-color: rgba(220,53,69,0.08);
+            }}
+
+            /* Finding rank/number badge */
+            .finding-rank {{
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 32px;
+                height: 32px;
+                background-color: #dc3545;
+                color: white;
+                border-radius: 50%;
+                font-weight: bold;
+                font-size: 0.95em;
+                margin-right: 12px;
+                flex-shrink: 0;
+            }}
+
+            /* Finding content container */
+            .finding-content {{
+                flex-grow: 1;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+            }}
+
+            /* Finding service and severity info */
+            .finding-info {{
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                margin-bottom: 6px;
+            }}
+
+            .finding-service {{
+                font-weight: 600;
+                color: #721c24;
+                font-size: 0.95em;
+            }}
+
+            .finding-rule {{
+                color: #333;
+                font-size: 0.9em;
+                word-break: break-word;
+            }}
+
+            /* "Ver detalles" button */
+            .finding-button-group {{
+                display: flex;
+                gap: 8px;
+                margin-left: 12px;
+                flex-shrink: 0;
+            }}
+
+            .btn-finding-detail {{
+                padding: 6px 12px;
+                font-size: 0.85em;
+                font-weight: 500;
+                background-color: #dc3545;
+                border-color: #dc3545;
+                color: white;
+                white-space: nowrap;
+                transition: all 0.2s ease;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+            }}
+
+            .btn-finding-detail:hover {{
+                background-color: #c82333;
+                border-color: #bd2130;
+                color: white;
+                text-decoration: none;
+            }}
+
+            .btn-finding-detail:focus {{
+                outline: 2px solid #dc3545;
+                outline-offset: 2px;
+            }}
+
+            /* Collapse toggle button */
+            .btn-link-collapse {{
+                padding: 0 !important;
+                margin: 0 !important;
+                background: none !important;
+                border: none !important;
+            }}
+
+            .btn-link-collapse:hover {{
+                color: #5a1419 !important;
+            }}
+
+            .btn-link-collapse[aria-expanded="false"] i {{
+                transform: rotate(180deg);
+            }}
+
+            /* Collapse animation */
+            .collapse {{
+                overflow: hidden;
+                transition: max-height 0.3s ease, opacity 0.3s ease;
+            }}
+
+            .collapse:not(.show) {{
+                display: none;
+            }}
+
+            .collapse.show {{
+                display: block;
+            }}
+
+            /* Responsive adjustments */
+            @media (max-width: 768px) {{
+                .finding-item {{
+                    flex-direction: column;
+                    padding: 10px;
                 }}
-            }});
+
+                .finding-rank {{
+                    width: 28px;
+                    height: 28px;
+                    font-size: 0.85em;
+                    margin-right: 8px;
+                    margin-bottom: 0;
+                }}
+
+                .finding-content {{
+                    width: 100%;
+                }}
+
+                .finding-button-group {{
+                    margin-left: 0;
+                    margin-top: 8px;
+                    width: 100%;
+                }}
+
+                .btn-finding-detail {{
+                    flex: 1;
+                    text-align: center;
+                    justify-content: center;
+                }}
+            }}
+
+            /* Alert animation */
+            .alert-danger {{
+                animation: slideDown 0.3s ease-out;
+            }}
+
+            @keyframes slideDown {{
+                from {{
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }}
+                to {{
+                    opacity: 1;
+                    transform: translateY(0);
+                }}
+            }}
+        </style>
+        """
+        
+        # Add JavaScript for enhanced collapse functionality
+        js_code = """
+        <script>
+            (function() {{
+                // Initialize collapse toggle icon rotation
+                document.addEventListener('DOMContentLoaded', function() {{
+                    const collapseBtn = document.querySelector('[data-toggle="collapse"][data-target="#top-findings-banner-content-collapse"]');
+                    const collapseTarget = document.querySelector('#top-findings-banner-content-collapse');
+                    
+                    if (!collapseBtn || !collapseTarget) return;
+                    
+                    // Update icon rotation based on collapse state
+                    function updateIconRotation() {{
+                        const icon = collapseBtn.querySelector('i');
+                        const isExpanded = collapseTarget.classList.contains('show');
+                        collapseBtn.setAttribute('aria-expanded', isExpanded);
+                    }}
+                    
+                    // Listen for Bootstrap collapse events
+                    collapseTarget.addEventListener('hide.bs.collapse', function() {{
+                        updateIconRotation();
+                    }});
+                    
+                    collapseTarget.addEventListener('show.bs.collapse', function() {{
+                        updateIconRotation();
+                    }});
+                    
+                    // Initial state
+                    updateIconRotation();
+                }});
+            }})();
         </script>
         """
         
-        return banner_html + js_code
+        return banner_html + css_code + js_code
     
     def _escape_html(self, text):
         """Escape HTML special characters in text for safe rendering"""

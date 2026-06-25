@@ -2,6 +2,8 @@ import uuid
 import random
 import os
 import json
+from urllib.parse import urlparse
+import html
 
 from utils.Config import Config
 from utils.Tools import _warn
@@ -459,8 +461,168 @@ $(document).ready(function() {
             output.append("<dt>Recommendation</dt><dd class='detail-href'>" + "</dd><dd class='detail-href''>".join(summary['__links']) + "</dd>")
 
         output.append("</dl>")
+        
+        # Add remediation section (Task 3.7)
+        remediation_html = self.generateRemediationSection(summary)
+        if remediation_html:
+            output.append(remediation_html)
 
         return "\n".join(output)
+    
+    def generateRemediationSection(self, finding):
+        """
+        Render remediation steps and links section with collapsible toggle.
+        
+        Supports:
+        - Numbered remediation steps from __remediation_steps field
+        - External links with Font Awesome fa-external-link-alt icons from __links field
+        - Collapsible toggle with smooth animation
+        - Visual indication when links are available
+        
+        Args:
+            finding: Finding dictionary containing __remediation_steps and __links fields
+            
+        Returns:
+            str: HTML markup for remediation section, or empty string if no remediation data
+        """
+        try:
+            # Validate finding is a dictionary
+            if not isinstance(finding, dict):
+                return ""
+            
+            # Extract remediation data
+            steps = finding.get('__remediation_steps', [])
+            links = finding.get('__links', [])
+            
+            # Return empty if no remediation data
+            if not steps and not links:
+                return ""
+            
+            # Generate unique ID for this remediation section
+            section_id = f"remediation-{uuid.uuid4().hex[:8]}"
+            
+            output = []
+            
+            # Remediation section header with toggle and link counter
+            link_count = len(links) if links else 0
+            
+            output.append("<div class='remediation-section'>")
+            output.append("<div class='remediation-header'>")
+            output.append(f"""
+            <button class='remediation-toggle' data-toggle='collapse' data-target='#{section_id}' 
+                    aria-expanded='true' aria-controls='{section_id}' type='button'>
+                <i class='fas fa-wrench'></i>
+                <span class='toggle-label'>Ver remediación</span>
+                <span class='toggle-icon'>▼</span>
+            </button>
+            """)
+            
+            # Badge showing link count
+            if link_count > 0:
+                output.append(f"<span class='remediation-badge'>{link_count} recursos</span>")
+            
+            output.append("</div>")  # End remediation-header
+            
+            # Collapsible content area
+            output.append(f"<div class='remediation-content collapse show' id='{section_id}'>")
+            
+            # Remediation steps section
+            if steps:
+                output.append("<div class='remediation-steps'>")
+                output.append("<h6 class='steps-title'>Pasos de remediación:</h6>")
+                output.append("<ol class='steps-list'>")
+                
+                for step in steps:
+                    # HTML escape step text for security
+                    safe_step = html.escape(str(step))
+                    output.append(f"<li class='step-item'>{safe_step}</li>")
+                
+                output.append("</ol>")
+                output.append("</div>")  # End remediation-steps
+            
+            # Links section
+            if links:
+                output.append("<div class='remediation-links'>")
+                output.append("<h6 class='links-title'>Enlaces útiles:</h6>")
+                output.append("<ul class='links-list'>")
+                
+                for link in links:
+                    # Validate and sanitize URL
+                    safe_link = html.escape(str(link))
+                    link_title = self._extract_link_title(link)
+                    
+                    output.append(
+                        f"<li class='link-item'>"
+                        f"<a href='{safe_link}' target='_blank' rel='noopener noreferrer' "
+                        f"class='remediation-link'>"
+                        f"<i class='fas fa-external-link-alt'></i> "
+                        f"<span class='link-text'>{link_title}</span>"
+                        f"</a>"
+                        f"</li>"
+                    )
+                
+                output.append("</ul>")
+                output.append("</div>")  # End remediation-links
+            
+            output.append("</div>")  # End remediation-content
+            output.append("</div>")  # End remediation-section
+            
+            return "\n".join(output)
+            
+        except Exception as e:
+            _warn(f"Error rendering remediation section: {str(e)}")
+            return ""
+    
+    def _extract_link_title(self, url):
+        """
+        Extract a readable title from a URL.
+        
+        Extracts the last meaningful part of the URL path and formats it as title case.
+        Falls back to domain if path is empty.
+        
+        Args:
+            url: The URL to extract title from
+            
+        Returns:
+            str: Readable link title
+            
+        Examples:
+            >>> _extract_link_title('https://docs.aws.amazon.com/iam/latest/userguide/id_mfa_activate_virtual.html')
+            'Id Mfa Activate Virtual.Html'
+            >>> _extract_link_title('https://aws.amazon.com/iam/')
+            'Iam'
+            >>> _extract_link_title('https://docs.aws.amazon.com')
+            'docs.aws.amazon.com'
+        """
+        try:
+            parsed = urlparse(url)
+            
+            # Extract the last meaningful part of the path
+            path_parts = parsed.path.strip('/').split('/')
+            
+            # Filter out empty parts and get the last one
+            meaningful_parts = [p for p in path_parts if p]
+            
+            if meaningful_parts:
+                # Get the last meaningful part and remove file extension
+                last_part = meaningful_parts[-1]
+                
+                # Remove .html, .php, etc.
+                if '.' in last_part:
+                    title_part = last_part.rsplit('.', 1)[0]
+                else:
+                    title_part = last_part
+                
+                # Convert kebab-case/snake_case to Title Case
+                title = title_part.replace('-', ' ').replace('_', ' ').title()
+                return title if title else parsed.netloc
+            else:
+                # Fall back to domain
+                return parsed.netloc
+                
+        except Exception as e:
+            _warn(f"Error extracting link title from {url}: {str(e)}")
+            return url
         
     def generateDonutPieChart(self, datasets, idPrefix='', typ='doughnut'):
         htmlId = idPrefix + typ + str(uuid.uuid1())
@@ -573,9 +735,9 @@ $(document).ready(function() {
         
     def _randomRGB(self, idx):
         if self.colorCustomRGB == None:
-            r1Arr = [226, 168, 109, 80 , 51 , 60 , 70 , 89 , 108]
-            r2Arr = [124, 100, 75 , 63 , 51 , 78 , 105, 158, 212]
-            r3Arr = [124, 100, 75 , 63 , 51 , 75 , 100, 148, 197]
+            r1Arr = [255, 13 , 220, 40 , 23 , 111, 253, 32 , 232]
+            r2Arr = [153, 46 , 53 , 167, 162, 66 , 126, 201, 62 ]
+            r3Arr = [0  , 94 , 69 , 69 , 184, 193, 20 , 151, 140]
         else:
             r1Arr = self.colorCustomRGB[0]
             r2Arr = self.colorCustomRGB[1]
@@ -592,7 +754,7 @@ $(document).ready(function() {
         
     def _randomHexColorCode(self, idx):
         if self.colorCustomHex == None:
-            color = ["#e27c7c", "#a86464", "#6d4b4b", "#503f3f", "#333333", "#3c4e4b", "#466964", "#599e94", "#6cd4c5"]
+            color = ["#FF9900", "#0D2E5E", "#dc3545", "#28a745", "#17a2b8", "#6f42c1", "#fd7e14", "#20c997", "#e83e8c"]
         else:
             color = self.colorCustomHex
         
@@ -653,10 +815,14 @@ $(document).ready(function() {
         # Generate suppression indicator
         suppression_indicator = self.generateSuppressionIndicator()
         
+        # Get client name from Config (default to 'OTC' if not set)
+        client_name = Config.get('CLIENT_NAME', 'OTC')
+        
         output.append(
             headerPostCSS.replace('{$ADVISOR_TITLE}', Config.ADVISOR['TITLE'])
                 .replace('{$OPTIONS_ACCOUNTS}', self.accountListsHTML())
                 .replace('{$SUPPRESSION_INDICATOR}', suppression_indicator)
+                .replace('{$CLIENT_NAME}', client_name)
         )
         
         js = """
@@ -818,12 +984,30 @@ $('#changeAcctId').change(function(){
         PROJECT_TITLE = Config.ADVISOR['TITLE']
         PROJECT_VERSION = Config.ADVISOR['VERSION']
         
+        # Get CLIENT_NAME from config (defaults to 'OTC' if not set)
+        CLIENT_NAME = Config.get('CLIENT_NAME', 'OTC') or 'OTC'
+        
+        # Get SCAN_TIMESTAMP from config and format it
+        scan_timestamp = Config.get('SCAN_TIMESTAMP', None)
+        if scan_timestamp:
+            # Format: YYYY-MM-DD HH:MM:SS
+            from datetime import datetime
+            if isinstance(scan_timestamp, datetime):
+                SCAN_DATE = scan_timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            else:
+                SCAN_DATE = str(scan_timestamp)
+        else:
+            from datetime import datetime
+            SCAN_DATE = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
         x = preJS.replace('{$ADMINLTE_VERSION}', ADMINLTE_VERSION)
         x = x.replace('{$ADMINLTE_DATERANGE}', ADMINLTE_DATERANGE)
         x = x.replace('{$ADMINLTE_URL}', ADMINLTE_URL)
         x = x.replace('{$ADMINLTE_TITLE}', ADMINLTE_TITLE)
         x = x.replace('{$PROJECT_TITLE}', PROJECT_TITLE)
         x = x.replace('{$PROJECT_VERSION}', PROJECT_VERSION)
+        x = x.replace('{$CLIENT_NAME}', CLIENT_NAME)
+        x = x.replace('{$SCAN_DATE}', SCAN_DATE)
         
         output.append(x)
 

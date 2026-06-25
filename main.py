@@ -5,6 +5,7 @@ import json
 import locale
 import logging
 import sys
+import re
 from datetime import datetime
 from sys import platform
 
@@ -74,6 +75,40 @@ def setup_logging():
 
 def number_format(num, places=2):
     return locale.format_string("%.*f", (places, num), True)
+
+def generate_output_filename():
+    """
+    Generate client-customized output filename.
+    
+    Format: {SANITIZED_CLIENT}_{TIMESTAMP}_findings.zip
+    where TIMESTAMP is in YYYYMMDD format.
+    
+    Returns:
+        str: Filename with client name, timestamp, and .zip extension
+    """
+    # Get client name from Config (defaults to 'OTC' if not set)
+    client_name = Config.get('CLIENT_NAME', 'OTC')
+    
+    # Handle None or empty client name
+    if not client_name:
+        client_name = 'OTC'
+    
+    # Sanitize client name: keep only alphanumeric, hyphens, underscores
+    # Replace spaces with underscores, remove other special characters
+    sanitized_client = re.sub(r'[^a-zA-Z0-9_-]', '', client_name.replace(' ', '_'))
+    
+    # If sanitization results in empty string, use default
+    if not sanitized_client:
+        sanitized_client = 'OTC'
+    
+    # Generate timestamp in YYYYMMDD format
+    timestamp = datetime.now().strftime('%Y%m%d')
+    
+    # Construct filename
+    filename = f"{sanitized_client}_{timestamp}_findings.zip"
+    
+    return filename
+
 
 def collect_fork_results(contexts, serviceStat, scanned):
     """Collect scan results from __fork directory files into contexts and stats"""
@@ -209,6 +244,9 @@ _cli_options = ArguParser.Load()
 # Setup logging to capture all output to timestamped log file
 log_filepath = setup_logging()
 
+# Store scan timestamp for use throughout the application (e.g., in footer)
+Config.set('SCAN_TIMESTAMP', datetime.now())
+
 debugFlag = _cli_options['debug']
 # feedbackFlag = _cli_options['feedback']
 # testmode = _cli_options['dev']
@@ -220,6 +258,7 @@ beta = _cli_options['beta']
 suppress_file = _cli_options['suppress_file']
 sequential = _cli_options['sequential']
 disable_custom_pages = _cli_options['disable_custom_pages']
+client_name = _cli_options['client']
 
 # print(crossAccounts)
 DEBUG = True if debugFlag in _C.CLI_TRUE_KEYWORD_ARRAY or debugFlag is True else False
@@ -250,6 +289,7 @@ if suppress_file:
         Config.set('suppressions_manager', suppressions_manager)
 Config.set('beta', beta)
 Config.set('disable_custom_pages', disable_custom_pages)
+Config.set('CLIENT_NAME', client_name)
 Config.set("_SS_PARAMS", _cli_options)
 
 defaultSessionRegion = 'us-east-1'
@@ -484,9 +524,18 @@ for acctId, cred in rolesCred.items():
         shutil.rmtree(path_to_folder)
 
     os.chdir(_C.ROOT_DIR)
+    
+    # Clean up old output files (both legacy output.zip and any previous client-specific zips)
     filetodel = _C.ROOT_DIR + '/output.zip'
     if os.path.exists(filetodel):
         os.remove(filetodel)
+    
+    # Also clean up any previously generated client-specific zip files
+    # to avoid accumulation (keep only the current one)
+    for file in os.listdir(_C.ROOT_DIR):
+        if file.endswith('_findings.zip'):
+            os.remove(os.path.join(_C.ROOT_DIR, file))
+    
     
     
     ## Generate output
@@ -545,10 +594,13 @@ for acctId, cred in rolesCred.items():
     
 
 adminlteDir = _C.ADMINLTE_ROOT_DIR
-shutil.make_archive('output', 'zip', adminlteDir)
+output_filename = generate_output_filename()
+# Create zip without the .zip extension (shutil.make_archive adds it)
+zip_base_name = output_filename.replace('.zip', '')
+shutil.make_archive(zip_base_name, 'zip', adminlteDir)
 
-print("Pages generated, download \033[1;42moutput.zip\033[0m to view")
-print("CloudShell user, you may use this path: \033[1;42m =====> \033[0m /tmp/service-screener-v2/output.zip \033[1;42m <===== \033[0m")
+print(f"Pages generated, download \033[1;42m{output_filename}\033[0m to view")
+print(f"CloudShell user, you may use this path: \033[1;42m =====> \033[0m /tmp/service-screener-v2/{output_filename} \033[1;42m <===== \033[0m")
 
 scriptTimeSpent = round(time.time() - scriptStartTime, 3)
 print("@ Thank you for using {}, script spent {}s to complete @".format(Config.ADVISOR['TITLE'], scriptTimeSpent))

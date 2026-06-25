@@ -95,6 +95,11 @@ class ArguParser:
             "required": False,
             "default": False,
             "help": "Disable custom pages processing (COH, TA, Findings, Modernize) for faster scans. Only core service analysis will be performed."
+        },
+        'client': {
+            "required": False,
+            "default": "OTC",
+            "help": "--client CLIENT_NAME (e.g., --client Acme-Corp) for client-branded report generation"
         }
     }
 

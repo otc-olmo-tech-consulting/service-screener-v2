@@ -65,7 +65,55 @@ Service Screener creates a temporary, empty CloudFormation stack during each run
 
 The stack is automatically created at the start of each run with a unique name (format: `ssv2-xxxxxxxxxxxx`) and is automatically deleted when the assessment completes. The stack remains visible in CloudFormation history (when viewing "Deleted" stacks) for audit purposes. This approach leverages AWS's built-in audit capabilities without requiring additional logging infrastructure.
 
+## Quick Start (CloudShell)
+
+**One-time setup:** Copy and paste the command below into AWS CloudShell. This will download and run the automated installation script.
+
+``` bash
+curl -sSL https://raw.githubusercontent.com/aws-samples/service-screener-v2/main/install_otc.sh | bash
+```
+
+**What this does (one-time only):**
+- ✅ Checks system prerequisites (Python 3.10+, Git, AWS CLI, disk space)
+- ✅ Creates a Python virtual environment isolated from system packages
+- ✅ Installs all dependencies from requirements.txt
+- ✅ Creates the `otc-screener` alias for easy command access
+- ✅ Stores setup log at `~/.otc_install.log` for troubleshooting
+- ✅ Completes in approximately 2-3 minutes
+
+**After installation, refresh your shell:**
+``` bash
+source ~/.bashrc
+```
+
+**Example Usage:**
+``` bash
+# Scan a single region with all services
+otc-screener --regions us-east-1
+
+# Scan multiple regions
+otc-screener --regions us-east-1,eu-west-1
+
+# Scan specific services
+otc-screener --regions us-east-1 --services ec2,iam,s3
+
+# Enable new Cloudscape UI (beta feature)
+otc-screener --regions us-east-1 --beta 1
+
+# Use custom client name in report
+otc-screener --regions us-east-1 --client "ACME-Corp"
+```
+
+**Supported Regions:** All AWS regions where Service Screener is available. Common regions include: `us-east-1`, `us-west-2`, `eu-west-1`, `eu-central-1`, `ap-southeast-1`, `ap-northeast-1`, `ca-central-1`. Specify `--regions ALL` to scan every region.
+
+**Supported Services:** Service Screener checks 40+ AWS services including EC2, S3, IAM, RDS, Lambda, DynamoDB, CloudFront, KMS, VPC, ElastiCache, and more. For the complete list, see "SERVICES_IDENTIFIER_MAPPING" in [Config.py](./utils/Config.py).
+
+---
+
 ## Installing service-screener V2
+
+If you prefer manual setup or CloudShell automated installation doesn't work:
+
 1. [Log in to your AWS account](https://docs.aws.amazon.com/cloudshell/latest/userguide/getting-started.html#start-session) using the IAM User with sufficient permissions described above. 
 2. Launch [AWS CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/getting-started.html#launch-region-shell) in any region. 
 3. In the AWS CloudShell terminal, run this script to update python version to 3.13:

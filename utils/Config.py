@@ -21,6 +21,9 @@ class Config:
         'URL': 'https://olmo-tech.com',
         'TITLE': 'Olmo Tech Consulting'
     }
+    
+    # Default client name (can be overridden via --client CLI flag)
+    CLIENT_NAME = 'OTC'
 
     GLOBAL_SERVICES = [
         'iam',
@@ -32,6 +35,9 @@ class Config:
     ]
     
     CURRENT_REGION = 'us-east-1'
+    
+    # Scan timestamp - set when scanning begins
+    SCAN_TIMESTAMP = None
     
     # Framework descriptions mapping - includes Spanish descriptions for dashboard and tooltips
     FRAMEWORK_DESCRIPTIONS = {
@@ -139,6 +145,16 @@ class Config:
     @staticmethod
     def retrieveAllCache():
         return cache
+    
+    @staticmethod
+    def get_client_name():
+        """Get the configured client name for branding"""
+        return Config.get('CLIENT_NAME', Config.CLIENT_NAME)
+    
+    @staticmethod
+    def set_client_name(name):
+        """Set the client name for branding"""
+        Config.set('CLIENT_NAME', name)
         
     
     ## do checking for prefix=cloud, if found, use first 8character instead

@@ -17,6 +17,18 @@
     .brand-link { border-bottom: 1px solid rgba(255,255,255,0.1) !important; }
     .badge-info { background-color: #FF9900 !important; color: #fff !important; }
     .main-footer { font-size: 12px; }
+    
+    /* Client Name in Navbar */
+    .navbar-nav .nav-link {
+      padding: 0.5rem 1rem !important;
+      white-space: nowrap;
+    }
+    
+    #changeAcctId {
+      max-width: 200px;
+      display: inline-block;
+      vertical-align: middle;
+    }
 
     /* Health Score Card Styling */
     .health-score-card {
@@ -270,6 +282,92 @@
       /* Info severity - custom blue/info */
     }
 
+    /* ===== Phase 5: Footer Customization (Task 5.4) ===== */
+    /* Enhanced Footer Styling for Client Customization */
+    .main-footer {
+      background-color: #fff;
+      border-top: 2px solid #FF9900;
+      padding: 16px 20px;
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .main-footer > div {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .main-footer strong {
+      color: #333;
+      font-weight: 600;
+    }
+
+    .main-footer a {
+      color: #FF9900;
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .main-footer a:hover {
+      color: #0D2E5E;
+      text-decoration: underline;
+    }
+
+    .main-footer small {
+      color: #999;
+      font-size: 11px;
+    }
+
+    /* Responsive footer layout */
+    @media (max-width: 768px) {
+      .main-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 16px;
+      }
+
+      .main-footer > div {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .main-footer > div:last-child {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .main-footer {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 10px 12px;
+        gap: 10px;
+      }
+
+      .main-footer > div {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+
+      .main-footer strong {
+        display: inline;
+      }
+
+      .main-footer small {
+        font-size: 10px;
+        word-break: break-word;
+      }
+    }
+
     /* ===== Phase 3: Severity Filter Panel ===== */
     /* Severity Filter Panel Styles */
     .severity-filter-panel {
@@ -472,6 +570,368 @@
         font-size: 0.85em;
       }
     }
+
+    /* ===== Phase 3: Remediation Section Template (Task 3.6) ===== */
+    /* Remediation Section Container */
+    .remediation-section {
+      margin-top: 16px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      background-color: #fafbfc;
+      overflow: hidden;
+    }
+
+    /* Remediation Header with Toggle and Badge */
+    .remediation-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background-color: #f0f4f8;
+      border-bottom: 1px solid #e0e0e0;
+      gap: 12px;
+    }
+
+    /* Remediation Toggle Button */
+    .remediation-toggle {
+      flex: 1;
+      background-color: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      color: #333;
+      transition: all 0.2s ease;
+      text-align: left;
+      outline: none;
+    }
+
+    .remediation-toggle:hover {
+      color: #FF9900;
+    }
+
+    .remediation-toggle:focus {
+      outline: 2px solid #FF9900;
+      outline-offset: 2px;
+      border-radius: 3px;
+    }
+
+    .remediation-toggle i {
+      font-size: 18px;
+      color: #FF9900;
+      flex-shrink: 0;
+    }
+
+    .toggle-label {
+      flex: 1;
+      white-space: nowrap;
+    }
+
+    .toggle-icon {
+      flex-shrink: 0;
+      font-size: 12px;
+      display: inline-block;
+      transition: transform 0.3s ease;
+      font-weight: bold;
+      color: #666;
+    }
+
+    /* Toggle icon rotation when collapsed */
+    .remediation-toggle[aria-expanded="false"] .toggle-icon {
+      transform: rotate(-180deg);
+    }
+
+    /* Remediation Badge */
+    .remediation-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      background-color: #FF9900;
+      color: #fff;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* Remediation Content (Collapsible) */
+    .remediation-content {
+      padding: 16px;
+      background-color: #fff;
+      animation: slideDown 0.3s ease-in-out;
+      max-height: 1000px;
+      overflow: hidden;
+      transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    }
+
+    .remediation-content.collapse {
+      max-height: 0;
+      opacity: 0;
+      padding: 0 16px;
+      overflow: hidden;
+    }
+
+    .remediation-content.collapse.show {
+      max-height: 1000px;
+      opacity: 1;
+      padding: 16px;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Remediation Steps Section */
+    .remediation-steps {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .remediation-steps:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .steps-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin: 0 0 12px 0;
+      text-transform: none;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .steps-title::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 16px;
+      background-color: #28a745;
+      border-radius: 2px;
+    }
+
+    .steps-list {
+      margin: 0;
+      padding-left: 24px;
+      list-style: decimal;
+    }
+
+    .step-item {
+      margin-bottom: 10px;
+      color: #555;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .step-item:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Remediation Links Section */
+    .remediation-links {
+      margin-top: 16px;
+    }
+
+    .links-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin: 0 0 12px 0;
+      text-transform: none;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .links-title::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 16px;
+      background-color: #0066cc;
+      border-radius: 2px;
+    }
+
+    .links-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .link-item {
+      margin: 0;
+      padding: 0;
+    }
+
+    .remediation-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background-color: #e7f3ff;
+      border-left: 4px solid #0066cc;
+      border-radius: 3px;
+      color: #0066cc;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .remediation-link:hover {
+      background-color: #cce5ff;
+      padding-left: 16px;
+      text-decoration: none;
+      color: #0052a3;
+      box-shadow: 0 2px 4px rgba(0, 102, 204, 0.15);
+    }
+
+    .remediation-link:focus {
+      outline: 2px solid #0066cc;
+      outline-offset: 2px;
+      text-decoration: none;
+    }
+
+    .remediation-link i {
+      font-size: 12px;
+      flex-shrink: 0;
+      color: #0066cc;
+    }
+
+    .remediation-link:hover i {
+      color: #0052a3;
+    }
+
+    .link-text {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Responsive design for remediation section */
+    @media (max-width: 768px) {
+      .remediation-header {
+        flex-wrap: wrap;
+        padding: 10px 12px;
+        gap: 8px;
+      }
+
+      .remediation-toggle {
+        font-size: 14px;
+        gap: 8px;
+      }
+
+      .remediation-toggle i {
+        font-size: 16px;
+      }
+
+      .remediation-badge {
+        padding: 5px 10px;
+        font-size: 12px;
+      }
+
+      .remediation-content {
+        padding: 12px;
+      }
+
+      .remediation-link {
+        white-space: normal;
+        word-break: break-word;
+      }
+
+      .link-text {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .remediation-section {
+        margin-top: 12px;
+        border-radius: 4px;
+      }
+
+      .remediation-header {
+        padding: 10px;
+        gap: 6px;
+      }
+
+      .remediation-toggle {
+        font-size: 13px;
+        gap: 8px;
+      }
+
+      .remediation-toggle i {
+        font-size: 14px;
+      }
+
+      .toggle-label {
+        font-size: 13px;
+      }
+
+      .remediation-badge {
+        padding: 4px 8px;
+        font-size: 11px;
+        order: -1;
+        flex-grow: 1;
+        text-align: center;
+      }
+
+      .remediation-content {
+        padding: 10px;
+        font-size: 13px;
+      }
+
+      .steps-title,
+      .links-title {
+        font-size: 13px;
+        margin-bottom: 10px;
+      }
+
+      .step-item {
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+
+      .remediation-link {
+        padding: 8px 10px;
+        font-size: 13px;
+        gap: 8px;
+      }
+
+      .remediation-link:hover {
+        padding-left: 12px;
+      }
+
+      .remediation-link i {
+        font-size: 11px;
+      }
+    }
   </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
@@ -484,7 +944,9 @@
         <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
       </li>
       <li class="nav-item d-none d-sm-inline-block">
-        <a href="https://github.com/aws-samples/service-screener-v2" target=_blank rel="noopener noreferrer" class="nav-link">Visit Github</a>
+        <a href="mailto:soporte@olmotechconsulting.com" class="nav-link">
+          <i class="fas fa-headset"></i> Soporte OTC
+        </a>
       </li>
     </ul>
 
@@ -492,12 +954,15 @@
     <ul class="navbar-nav ml-auto">
       {$SUPPRESSION_INDICATOR}
       <li class="nav-item d-none d-sm-inline-block">
-        <span class="nav-link">Change Account ID: </span>
+        <span class="nav-link">Account: </span>
       </li>
       <li class="nav-item">
         <select class="form-control" id='changeAcctId'>
           {$OPTIONS_ACCOUNTS}
         </select>
+      </li>
+      <li class="nav-item d-none d-sm-inline-block">
+        <span class="nav-link"> | Client: {$CLIENT_NAME}</span>
       </li>
       <li class="nav-item">
         <a class="nav-link" data-widget="fullscreen" href="#" role="button">
