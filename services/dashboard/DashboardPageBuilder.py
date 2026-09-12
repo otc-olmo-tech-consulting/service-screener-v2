@@ -79,33 +79,41 @@ class DashboardPageBuilder(PageBuilder):
         account_id = Config.get('accountId', 'N/A')
         current_time = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         
-        # Map grade to Spanish terminology and gradient colors
+        # Grade terminology and gradient colors.
+        # NOTE: both 'english' and 'spanish' labels are kept here on purpose so a
+        # future language selector can switch between them. Today the report renders
+        # the English label ('english'); the Spanish scaffolding stays intact.
         grade_map = {
             'A': {
+                'english': 'Optimal Posture',
                 'spanish': 'Postura Óptima',
                 'gradient_start': '#28a745',
                 'gradient_end': '#20c997',
                 'color_class': 'success'
             },
             'B': {
+                'english': 'Good Posture',
                 'spanish': 'Postura Buena',
                 'gradient_start': '#0066cc',
                 'gradient_end': '#0099ff',
                 'color_class': 'info'
             },
             'C': {
+                'english': 'Improvements Required',
                 'spanish': 'Requiere Mejoras',
                 'gradient_start': '#ff9900',
                 'gradient_end': '#ffb84d',
                 'color_class': 'warning'
             },
             'D': {
+                'english': 'Improvements Required',
                 'spanish': 'Requiere Mejoras',
                 'gradient_start': '#ff9900',
                 'gradient_end': '#ffb84d',
                 'color_class': 'warning'
             },
             'F': {
+                'english': 'Needs Immediate Attention',
                 'spanish': 'Atención Urgente',
                 'gradient_start': '#dc3545',
                 'gradient_end': '#ff6b6b',
@@ -114,7 +122,7 @@ class DashboardPageBuilder(PageBuilder):
         }
         
         grade_info = grade_map.get(grade, grade_map['F'])
-        spanish_grade = grade_info['spanish']
+        grade_label = grade_info['english']
         gradient_start = grade_info['gradient_start']
         gradient_end = grade_info['gradient_end']
         color_class = grade_info['color_class']
@@ -132,12 +140,12 @@ class DashboardPageBuilder(PageBuilder):
             <div style="background: linear-gradient(135deg, {gradient_start} 0%, {gradient_end} 100%); padding: 25px; color: white;">
                 <div class="row" style="align-items: center;">
                     <div class="col-md-6">
-                        <h4 style="margin: 0 0 8px 0; font-weight: bold; color: rgba(255,255,255,0.95);">Salud Operativa del Entorno AWS</h4>
-                        <p style="margin: 0; font-size: 0.9em; color: rgba(255,255,255,0.8);">{severity_counts['H']} hallazgos críticos requieren acción inmediata · {total_findings} hallazgos totales</p>
+                        <h4 style="margin: 0 0 8px 0; font-weight: bold; color: rgba(255,255,255,0.95);">AWS Environment Operational Health</h4>
+                        <p style="margin: 0; font-size: 0.9em; color: rgba(255,255,255,0.8);">{severity_counts['H']} critical findings require immediate action · {total_findings} total findings</p>
                     </div>
                     <div class="col-md-6" style="text-align: right;">
                         <div style="font-size: 2.8em; font-weight: bold; color: rgba(255,255,255,1); margin: 0; line-height: 1;">{percentage_str}%</div>
-                        <div style="font-size: 1.15em; font-weight: 600; color: rgba(255,255,255,0.95); margin-top: 5px;">{spanish_grade}</div>
+                        <div style="font-size: 1.15em; font-weight: 600; color: rgba(255,255,255,0.95); margin-top: 5px;">{grade_label}</div>
                     </div>
                 </div>
             </div>
@@ -150,26 +158,26 @@ class DashboardPageBuilder(PageBuilder):
                         <div style="font-size: 1.5em; font-weight: bold; color: #dc3545;">
                             <i class="fas fa-ban"></i> {severity_counts['H']}
                         </div>
-                        <div style="font-size: 0.85em; color: #666; margin-top: 4px;">Críticos</div>
+                        <div style="font-size: 0.85em; color: #666; margin-top: 4px;">Critical</div>
                     </div>
                     <div class="col-auto" style="flex: 0 1 calc(33.333% - 7px); text-align: center; padding: 10px; background-color: #f8f9fa; border-radius: 6px; border-left: 4px solid #ffc107;">
                         <div style="font-size: 1.5em; font-weight: bold; color: #ffc107;">
                             <i class="fas fa-exclamation-triangle"></i> {severity_counts['M']}
                         </div>
-                        <div style="font-size: 0.85em; color: #666; margin-top: 4px;">Moderados</div>
+                        <div style="font-size: 0.85em; color: #666; margin-top: 4px;">Moderate</div>
                     </div>
                     <div class="col-auto" style="flex: 0 1 calc(33.333% - 7px); text-align: center; padding: 10px; background-color: #f8f9fa; border-radius: 6px; border-left: 4px solid #17a2b8;">
                         <div style="font-size: 1.5em; font-weight: bold; color: #17a2b8;">
                             <i class="fas fa-eye"></i> {severity_counts['L']}
                         </div>
-                        <div style="font-size: 0.85em; color: #666; margin-top: 4px;">Bajos</div>
+                        <div style="font-size: 0.85em; color: #666; margin-top: 4px;">Low</div>
                     </div>
                 </div>
                 
                 <!-- Horizontal Progress Bar with Markers -->
                 <div style="margin-bottom: 15px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <div style="font-size: 0.85em; color: #666; font-weight: 500;">Progreso de Conformidad</div>
+                        <div style="font-size: 0.85em; color: #666; font-weight: 500;">Compliance Progress</div>
                         <div style="font-size: 0.85em; color: #666;">{percentage_str}%</div>
                     </div>
                     <div style="position: relative; height: 24px; background-color: #e9ecef; border-radius: 12px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
@@ -189,7 +197,7 @@ class DashboardPageBuilder(PageBuilder):
             
             <!-- Card Footer with Analysis Info -->
             <div style="background-color: #f8f9fa; padding: 12px 20px; border-top: 1px solid #dee2e6; font-size: 0.85em; color: #666;">
-                <i class="fas fa-clock"></i> Análisis: {current_time} UTC · <i class="fas fa-lock"></i> Cuenta: {account_id}
+                <i class="fas fa-clock"></i> Analysis: {current_time} UTC · <i class="fas fa-lock"></i> Account: {account_id}
             </div>
         </div>
     </div>
@@ -251,7 +259,7 @@ class DashboardPageBuilder(PageBuilder):
         items = []
         
         pid = self.getHtmlId('criticalityCount')
-        card = self.generateCard(pid=pid, html=xhtml, cardClass='danger', title='Hallazgos por Nivel de Severidad', titleBadge='', collapse=False, noPadding=False)
+        card = self.generateCard(pid=pid, html=xhtml, cardClass='danger', title='Findings by Severity Level', titleBadge='', collapse=False, noPadding=False)
         securityBox = self.generateSecurityBigBox(dataSets['S'])
         
         # Add visual separator and label above Security box (Task 2.15)
@@ -261,10 +269,10 @@ class DashboardPageBuilder(PageBuilder):
         {card}
     </div>
     <div class="col-sm-4">
-        <!-- Separator with label "Pilar con Mayor Riesgo" -->
+        <!-- Separator with label "Highest Risk Pillar" -->
         <div style="padding-bottom: 10px; margin-bottom: 10px; border-bottom: 2px solid #dc3545; display: flex; align-items: center;">
             <i class="fas fa-exclamation-circle" style="color: #dc3545; margin-right: 8px;"></i>
-            <span style="font-weight: 600; color: #333; font-size: 0.95em;">Pilar con Mayor Riesgo</span>
+            <span style="font-weight: 600; color: #333; font-size: 0.95em;">Highest Risk Pillar</span>
         </div>
         {securityBox}
     </div>
@@ -337,22 +345,22 @@ class DashboardPageBuilder(PageBuilder):
         # card = self.generateCard(pid=pid, html=html, cardClass='danger', title='No. Criticality', titleBadge='', collapse=False, noPadding=False)
                 
         html = self.generateDonutPieChart(filterDonutL, 'hriByRegion', 'doughnut')
-        card = self.generateCard(pid=self.getHtmlId('chartServRegion'), html=html, cardClass='warning', title='Distribución de Riesgos Críticos por Región', titleBadge='', collapse=True, noPadding=False)
+        card = self.generateCard(pid=self.getHtmlId('chartServRegion'), html=html, cardClass='warning', title='Critical Risk Distribution by Region', titleBadge='', collapse=True, noPadding=False)
         items = [[card, '']]
         
         html = self.generateDonutPieChart(filterDonutR, 'hriByService', 'pie')
-        card = self.generateCard(pid=self.getHtmlId('pieHriByService'), html=html, cardClass='warning', title='Servicios con Mayor Riesgo Crítico', titleBadge='', collapse=True, noPadding=False)
+        card = self.generateCard(pid=self.getHtmlId('pieHriByService'), html=html, cardClass='warning', title='Services with Highest Critical Risk', titleBadge='', collapse=True, noPadding=False)
         items.append([card, ''])
         
         output.append(self.generateRowWithCol(size=6, items=items, rowHtmlAttr="data-context='chartHRICount'"))
         
         items = []
         html = self.generateBarChart(serviceLabels, dataSetsL, 'csr')
-        card = self.generateCard(pid=self.getHtmlId('chartServRegion'), html=html, cardClass='info', title='Cobertura del Análisis por Servicio', titleBadge='', collapse=True, noPadding=False)
+        card = self.generateCard(pid=self.getHtmlId('chartServRegion'), html=html, cardClass='info', title='Analysis Coverage by Service', titleBadge='', collapse=True, noPadding=False)
         items.append([card, ''])
         
         html = self.generateBarChart(regionLabels, dataSetsR, 'crs')
-        card = self.generateCard(pid=self.getHtmlId('chartRegionServ'), html=html, cardClass='info', title='Cobertura del Análisis por Región', titleBadge='', collapse=True, noPadding=False)
+        card = self.generateCard(pid=self.getHtmlId('chartRegionServ'), html=html, cardClass='info', title='Analysis Coverage by Region', titleBadge='', collapse=True, noPadding=False)
         items.append([card, ''])
         
         output.append(self.generateRowWithCol(size=6, items=items, rowHtmlAttr="data-context='chartCount'"))
@@ -381,11 +389,11 @@ class DashboardPageBuilder(PageBuilder):
         
         # Get description from framework mappings based on pillar
         frameworkDescriptionMap = {
-            'S': 'Protección de datos, identidades y detección de amenazas',
-            'R': 'Recuperación ante fallos y disponibilidad del sistema',
-            'C': 'Eliminación de gastos innecesarios y uso eficiente',
-            'P': 'Uso óptimo de recursos computacionales',
-            'O': 'Operaciones, monitoreo y mejora continua'
+            'S': 'Data protection, identities and threat detection',
+            'R': 'Failure recovery and system availability',
+            'C': 'Eliminating unnecessary spend and efficient usage',
+            'P': 'Optimal use of computing resources',
+            'O': 'Operations, monitoring and continuous improvement'
         }
         
         description = frameworkDescriptionMap.get(key, '')
@@ -416,10 +424,10 @@ class DashboardPageBuilder(PageBuilder):
         
     def getHRIInfo(self, cat, cnt, total):
         attrArr = {
-            'H': ['danger', 'High', 'ban', 'Crítico — Acción inmediata'],
-            'M': ['warning', 'Medium', 'exclamation-triangle', 'Moderado — Planificar en 30 días'],
-            'L': ['info', 'Low', 'eye', 'Bajo — Revisar en 90 días'],
-            'I': ['primary', 'Informational', 'info-circle', 'Informativo — Referencia']
+            'H': ['danger', 'High', 'ban', 'Critical — Immediate action'],
+            'M': ['warning', 'Medium', 'exclamation-triangle', 'Moderate — Plan within 30 days'],
+            'L': ['info', 'Low', 'eye', 'Low — Review within 90 days'],
+            'I': ['primary', 'Informational', 'info-circle', 'Informational — Reference']
         }
         
         colorClass, title, icon, action_label = attrArr[cat]
@@ -453,7 +461,7 @@ class DashboardPageBuilder(PageBuilder):
   <div class="inner">
     <h3>{total}</h3>
     <p>Security</p>
-    <p class="waf-pillar-description" style="font-size: 0.85em; font-weight: normal; color: rgba(255,255,255,0.7); line-height: 1.3; word-wrap: break-word; margin: 4px 0 0 0; padding: 0 2px;">pilar con más hallazgos</p>
+    <p class="waf-pillar-description" style="font-size: 0.85em; font-weight: normal; color: rgba(255,255,255,0.7); line-height: 1.3; word-wrap: break-word; margin: 4px 0 0 0; padding: 0 2px;">pillar with the most findings</p>
   </div>
   <div class="icon">
     <i style='color: #dfdfdf' class="fas fa-skull-crossbones"></i>
@@ -517,11 +525,11 @@ class DashboardPageBuilder(PageBuilder):
         (no JavaScript-driven data). Each service is listed with its HIGH finding count
         and a link to the service detail page.
         
-        Spanish titles and subtitles:
-        - Title: "Prioridades de Acción Inmediata"
-        - Subtitle: "Servicios que requieren atención prioritaria del equipo técnico"
+        Titles and subtitles (English; Spanish scaffolding kept for future i18n):
+        - Title: "Immediate Action Priorities"
+        - Subtitle: "Services that require priority attention from the technical team"
         
-        Format: "[SERVICE_UPPERCASE] — [N hallazgos críticos] — [link to {service}.html]"
+        Format: "[SERVICE_UPPERCASE] — [N critical findings] — [link to {service}.html]"
         
         Collapsible/expandable: Defaults to expanded state with Bootstrap collapse functionality.
         
@@ -539,8 +547,8 @@ class DashboardPageBuilder(PageBuilder):
                 service_lower = service_name.lower()
                 service_page = f"{service_lower}.html"
                 
-                # Format the text as: "SERVICE — N hallazgos críticos — link"
-                hallazgos_text = "1 hallazgo crítico" if high_count == 1 else f"{high_count} hallazgos críticos"
+                # Format the text as: "SERVICE — N critical findings — link"
+                hallazgos_text = "1 critical finding" if high_count == 1 else f"{high_count} critical findings"
                 
                 finding_row = f"""
                 <div class="finding-item">
@@ -553,7 +561,7 @@ class DashboardPageBuilder(PageBuilder):
                     </div>
                     <div class="finding-button-group">
                         <a href="{service_page}#H" class="btn btn-sm btn-finding-detail" target="_blank" rel="noopener noreferrer">
-                            <i class="fas fa-external-link-alt"></i> Ver detalles
+                            <i class="fas fa-external-link-alt"></i> View details
                         </a>
                     </div>
                 </div>
@@ -583,10 +591,10 @@ class DashboardPageBuilder(PageBuilder):
                             <i class="icon fas fa-fire" style="font-size: 1.3em; margin-right: 10px; color: #dc3545;"></i>
                             <div style="flex-grow: 1;">
                                 <h5 style="margin: 0 0 4px 0; font-weight: bold; color: #721c24;">
-                                    Prioridades de Acción Inmediata
+                                    Immediate Action Priorities
                                 </h5>
                                 <p style="margin: 0; font-size: 0.85em; color: #721c24; font-weight: 500;">
-                                    Servicios que requieren atención prioritaria del equipo técnico
+                                    Services that require priority attention from the technical team
                                 </p>
                             </div>
                         </div>
@@ -608,7 +616,7 @@ class DashboardPageBuilder(PageBuilder):
                         <div style="text-align: center; padding: 20px;">
                             <i class="fas fa-check-circle" style="font-size: 2em; color: #28a745; margin-bottom: 10px;"></i>
                             <p style="color: #155724; margin: 10px 0 0 0;">
-                                <strong>¡Excelente noticia!</strong> No se detectaron hallazgos críticos en esta evaluación.
+                                <strong>Great news!</strong> No critical findings were detected in this assessment.
                             </p>
                         </div>
                     </div>
@@ -622,8 +630,8 @@ class DashboardPageBuilder(PageBuilder):
                             <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(220,53,69,0.1);">
                                 <small style="color: #721c24;">
                                     <i class="fas fa-info-circle"></i>
-                                    <strong>Se muestran los {findings_count} principales servicios con hallazgos críticos.</strong>
-                                    Revise las páginas de detalle de servicio para hallazgos adicionales.
+                                    <strong>Showing the top {findings_count} services with critical findings.</strong>
+                                    Review the service detail pages for additional findings.
                                 </small>
                             </div>
                         </div>

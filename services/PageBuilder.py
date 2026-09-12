@@ -111,7 +111,10 @@ class PageBuilder:
             os.makedirs(self.htmlFolder)
         
         # print(self.htmlFolder + '/' + self.service + '.html')
-        with open(self.htmlFolder + '/' + self.service + '.html', 'w') as f:
+        # encoding='utf-8' is required so accented characters (á, é, í, ó, ú, ñ)
+        # render correctly. On Windows, open() defaults to the ANSI code page
+        # (cp1252), which corrupts UTF-8 text into replacement chars (e.g. Regi�n).
+        with open(self.htmlFolder + '/' + self.service + '.html', 'w', encoding='utf-8') as f:
             f.write(finalHTML)
     
     def init(self):
@@ -512,7 +515,7 @@ $(document).ready(function() {
             <button class='remediation-toggle' data-toggle='collapse' data-target='#{section_id}' 
                     aria-expanded='true' aria-controls='{section_id}' type='button'>
                 <i class='fas fa-wrench'></i>
-                <span class='toggle-label'>Ver remediación</span>
+                <span class='toggle-label'>View remediation</span>
                 <span class='toggle-icon'>▼</span>
             </button>
             """)
@@ -529,7 +532,7 @@ $(document).ready(function() {
             # Remediation steps section
             if steps:
                 output.append("<div class='remediation-steps'>")
-                output.append("<h6 class='steps-title'>Pasos de remediación:</h6>")
+                output.append("<h6 class='steps-title'>Remediation steps:</h6>")
                 output.append("<ol class='steps-list'>")
                 
                 for step in steps:
@@ -543,7 +546,7 @@ $(document).ready(function() {
             # Links section
             if links:
                 output.append("<div class='remediation-links'>")
-                output.append("<h6 class='links-title'>Enlaces útiles:</h6>")
+                output.append("<h6 class='links-title'>Useful links:</h6>")
                 output.append("<ul class='links-list'>")
                 
                 for link in links:

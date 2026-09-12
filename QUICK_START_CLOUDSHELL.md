@@ -1,103 +1,173 @@
-# AWS Environment Assessment Tool - Quick Start Guide
+# OTC Service Screener - Guía de Inicio Rápido (CloudShell y CLI Local)
 
-## Overview
+## Descripción General
 
-This guide provides step-by-step instructions to deploy and test the AWS Environment Assessment Tool in AWS CloudShell. The tool performs a comprehensive analysis of your AWS infrastructure against Well-Architected Framework best practices, generating an executive-ready assessment report with findings and remediation recommendations.
+Esta guía proporciona instrucciones paso a paso para desplegar y ejecutar la herramienta de evaluación de infraestructura AWS, ya sea en **AWS CloudShell** o desde una **terminal local con AWS CLI** (Windows, macOS o Linux) cuando no se dispone de acceso a CloudShell. La herramienta realiza un análisis integral de su entorno AWS contra las mejores prácticas del Well-Architected Framework, generando un reporte de evaluación con hallazgos y recomendaciones de remediación.
 
-**Time Required:** Approximately 30 minutes
-**AWS Service:** CloudShell (included in AWS Free Tier)
-**Prerequisites:** Valid AWS Account with appropriate IAM permissions
-
----
-
-## Prerequisites
-
-Before beginning, ensure you have:
-
-1. **AWS Account Access** - with appropriate read-only permissions
-2. **IAM Permissions** - the following are required:
-   - `ec2:Describe*` (for infrastructure assessment)
-   - `iam:Get*` and `iam:List*` (for security configuration review)
-   - `s3:GetBucketPolicy`, `s3:ListBucket` (for storage assessment)
-   - Complete policy: `ReadOnlyAccess` (AWS managed policy)
-
-3. **Resources in at least one AWS region** - the tool can scan empty environments, but results are more meaningful with deployed workloads
+**Tiempo Requerido:** Aproximadamente 30 minutos  
+**Entorno:** AWS CloudShell (incluido en AWS Free Tier) o terminal local con AWS CLI + Python 3.9+  
+**Prerequisitos:** Cuenta AWS válida con permisos IAM apropiados
 
 ---
 
-## Installation and Setup
+## Prerequisitos
 
-### Step 1: Initialize Environment (5 minutes)
+Antes de comenzar, asegúrese de tener:
 
-Copy and paste the following commands into AWS CloudShell:
+1. **Acceso a Cuenta AWS** - con permisos de solo lectura apropiados
+2. **Permisos IAM** - se requieren los siguientes:
+   - `ec2:Describe*` (para evaluación de infraestructura)
+   - `iam:Get*` e `iam:List*` (para revisión de configuración de seguridad)
+   - `s3:GetBucketPolicy`, `s3:ListBucket` (para evaluación de almacenamiento)
+   - Política completa recomendada: `ReadOnlyAccess` (política administrada por AWS)
+
+3. **Recursos en al menos una región AWS** - la herramienta puede escanear entornos vacíos, pero los resultados son más significativos con cargas de trabajo desplegadas
+
+---
+
+## Instalación y Configuración
+
+### Paso 1: Inicializar Entorno (5 minutos)
+
+Copie y pegue los siguientes comandos en AWS CloudShell:
 
 ```bash
-# Create isolated Python environment
+# Crear entorno Python aislado
 cd /tmp
 python3 -m venv assessment-env
 source assessment-env/bin/activate
 python3 -m pip install --upgrade pip
 
-# Clone and prepare the assessment tool
+# Clonar y preparar la herramienta de evaluación
 rm -rf service-screener-v2
 git clone https://github.com/otc-olmo-tech-consulting/service-screener-v2
 cd service-screener-v2
 
-# Install dependencies
+# Instalar dependencias
 pip install -r requirements.txt
-python3 unzip_botocore_lambda_runtime.py
 
-# Create convenient command alias
+# Crear alias de comando conveniente
 alias screener='python3 $(pwd)/main.py'
 ```
 
-**Expected Output:**
+**Resultado Esperado:**
 ```
 Cloning into 'service-screener-v2'...
 Successfully installed boto3-1.35.x, packaging-23.1.x, ...
-(No errors should appear)
+(No deberían aparecer errores)
 ```
 
 ---
 
-## Running Your First Assessment
+## Alternativa: Ejecutar desde una Terminal Local con AWS CLI (Windows / macOS / Linux)
 
-### Step 2: Verify Installation (2 minutes)
+Use esta opción cuando **no tenga acceso a AWS CloudShell** (por ejemplo, por restricciones de permisos). CloudShell es solo un entorno de conveniencia; la herramienta funciona igual en cualquier terminal con Python 3.9+ y credenciales AWS. Los pasos siguientes cubren el flujo completo: iniciar sesión con el CLI, preparar la herramienta, ejecutar el escaneo y abrir el reporte.
 
-Run a quick validation to ensure everything is configured correctly:
+> **Nota para Windows:** el `main.py` incluye un ajuste de compatibilidad con Windows para el manejo de procesos (`multiprocessing`). Este mismo archivo sigue funcionando en CloudShell/Linux sin cambios.
 
-```bash
-# Verify AWS credentials are available
+### Paso L1: Iniciar sesión con el AWS CLI
+
+Elija la opción que corresponda a cómo obtiene acceso a AWS. Verifique siempre al final con `aws sts get-caller-identity`.
+
+**Opción A — IAM Identity Center / SSO (recomendada):**
+```bat
+:: Configuración inicial (solo la primera vez)
+aws configure sso
+:: Iniciar sesión (cada vez que expire la sesión)
+aws sso login --profile mi-perfil
+```
+
+**Opción B — Access keys de usuario IAM:**
+```bat
+aws configure
+:: AWS Access Key ID, Secret Access Key, región (ej: us-east-1), formato: json
+```
+
+**Opción C — Credenciales temporales (STS / rol asumido):**
+```bat
+:: Windows CMD
+set AWS_ACCESS_KEY_ID=...
+set AWS_SECRET_ACCESS_KEY=...
+set AWS_SESSION_TOKEN=...
+```
+
+**Verificar la sesión:**
+```bat
 aws sts get-caller-identity
+```
+Debe devolver `Account`, `UserId` y `Arn`. Si esto responde, ya está autenticado.
 
-# Expected output (your AWS account information):
-# {
-#     "UserId": "AIDAI...",
-#     "Account": "123456789012",
-#     "Arn": "arn:aws:iam::123456789012:user/your-username"
-# }
+> **Permisos:** no se requiere permiso de CloudShell. Basta con permisos de **solo lectura** sobre la cuenta; se recomienda la política administrada `ReadOnlyAccess` (o `SecurityAudit`).
+
+### Paso L2: Preparar la herramienta
+
+```bat
+:: Ubicarse en la carpeta donde quiere trabajar y clonar (si aún no lo tiene)
+git clone https://github.com/otc-olmo-tech-consulting/service-screener-v2
+cd service-screener-v2
+
+:: Crear entorno virtual e instalar dependencias
+py -m venv .venv
+.venv\Scripts\activate.bat
+pip install -r requirements.txt
 ```
 
-If you see an error, your AWS credentials are not properly configured in CloudShell.
+> **PowerShell:** para activar el entorno use `.venv\Scripts\Activate.ps1` en vez de `activate.bat`. Si PowerShell bloquea el script, ejecute antes `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`.
+
+### Paso L3: Ejecutar el escaneo (modo secuencial)
+
+En una terminal local **debe** usar el flag `--sequential true`. Esto evita el modelo de procesos paralelos, que en Windows no comparte la sesión de AWS entre procesos. Todos los flags de esta herramienta requieren un valor explícito (`true`, `yes`, `y` o `1` para activarlos).
+
+```bat
+:: Prueba corta: un solo servicio, para validar que todo corre
+py main.py --regions us-east-1 --services ec2 --sequential true
+
+:: Escaneo completo de una región
+py main.py --regions us-east-1 --sequential true
+
+:: Con nombre de cliente para el branding del reporte
+py main.py --regions us-east-1 --client "Acme Corporation" --sequential true
+```
+
+> Si su sesión SSO expira a mitad del proceso (error `Token has expired`), vuelva a ejecutar `aws sso login --profile mi-perfil` y repita el escaneo.
+
+### Paso L4: Ubicar y abrir el reporte
+
+A diferencia de CloudShell, en una terminal local **el archivo NO está en `/tmp`**: se genera en la **raíz de la carpeta del proyecto** (`service-screener-v2`), con el nombre `{CLIENTE}_{FECHA}_findings.zip` (por ejemplo `OTC_20260911_findings.zip`).
+
+```bat
+:: Descomprimir el reporte (tar viene incluido en Windows 10/11)
+tar -xf OTC_20260911_findings.zip -C reporte
+
+:: El punto de entrada del reporte es index.html dentro de la carpeta extraída
+:: Ábralo en su navegador:
+start reporte\index.html
+```
+
+Como alternativa, haga clic derecho sobre el `.zip` en el Explorador de Windows → **Extraer todo**, y luego abra `index.html`. Si el reporte usa varias cuentas, el `index.html` estará dentro de `aws\<ID_de_cuenta>\`.
+
+A partir de aquí, las secciones siguientes (interpretación del reporte, opciones avanzadas, solución de problemas) aplican por igual para CloudShell y para el CLI local.
 
 ---
 
-### Step 3: Run Initial Assessment (10-15 minutes)
+## Ejecutar su Primera Evaluación
 
-Execute a scan of your AWS infrastructure:
+### Paso 2: Ejecutar Evaluación Inicial (10-15 minutos)
+
+Ejecute un escaneo de su infraestructura AWS:
 
 ```bash
-# Scan a single region with core services
+# Escanear una sola región con servicios principales
 screener --regions us-east-1 --services ec2,iam,s3,rds,lambda
 
-# Alternative: Scan all regions (longer running)
+# Alternativa: Escanear todas las regiones (mayor tiempo de ejecución)
 screener --regions ALL
 
-# For faster results with limited scope:
+# Para resultados más rápidos con alcance limitado:
 screener --regions us-east-1 --services iam
 ```
 
-**Expected Output:**
+**Resultado Esperado:**
 ```
 [STATUS] Scanning EC2 in us-east-1...
 [STATUS] Scanning IAM...
@@ -106,26 +176,26 @@ screener --regions us-east-1 --services iam
 [DONE] Output generated: output.zip
 ```
 
-The assessment typically takes 5-15 minutes depending on the number of resources and regions scanned.
+La evaluación típicamente toma 5-15 minutos dependiendo del número de recursos y regiones escaneadas.
 
 ---
 
-### Step 4: Review Results (5 minutes)
+### Paso 3: Revisar Resultados (5 minutos)
 
-Once the scan completes, verify the output was generated:
+Una vez que el escaneo se completa, verifique que la salida fue generada:
 
 ```bash
-# Confirm output file exists
+# Confirmar que el archivo de salida existe
 ls -lh output.zip
 
-# Extract the assessment report
+# Extraer el reporte de evaluación
 unzip -q output.zip
 
-# Verify report files were created
+# Verificar que los archivos del reporte fueron creados
 find adminlte/aws -name "*.html" -type f | head -5
 ```
 
-**Expected Output:**
+**Resultado Esperado:**
 ```
 -rw-r--r-- 1 user user 2.5M output.zip
 index.html
@@ -136,74 +206,74 @@ s3.html
 
 ---
 
-### Step 5: Download Assessment Report
+### Paso 4: Descargar Reporte de Evaluación
 
-Your assessment report is ready for download:
+Su reporte de evaluación está listo para descargar:
 
-#### Option A: Download via AWS CloudShell UI (Recommended)
-1. In the CloudShell window, click the **Actions** button (top-right)
-2. Select **Download file**
-3. Enter the file path: `output/adminlte/aws/index.html`
-4. Open the downloaded HTML file in your web browser
+#### Opción A: Descargar vía UI de CloudShell (Recomendado)
+1. En la ventana de CloudShell, haga clic en el botón **Actions** (esquina superior derecha)
+2. Seleccione **Download file**
+3. Ingrese la ruta del archivo: `output/adminlte/aws/index.html`
+4. Abra el archivo HTML descargado en su navegador web
 
-#### Option B: Download via Command Line
+#### Opción B: Descargar vía Línea de Comandos
 ```bash
-# If you have AWS CLI configured for S3 access (optional):
-aws s3 cp output.zip s3://your-bucket-name/assessments/
+# Si tiene AWS CLI configurado con acceso a S3 (opcional):
+aws s3 cp output.zip s3://su-bucket/evaluaciones/
 ```
 
 ---
 
-## Understanding Your Assessment Report
+## Entendiendo su Reporte de Evaluación
 
-### Report Contents
+### Contenido del Reporte
 
-Your assessment report includes:
+Su reporte de evaluación incluye:
 
-**Executive Dashboard:**
-- Overall infrastructure health score (0-100)
-- Risk distribution by severity (High, Medium, Low)
-- Top 5 critical findings requiring attention
-- Well-Architected Framework pillar assessment
+**Dashboard Ejecutivo:**
+- Puntaje de salud general de la infraestructura (0-100)
+- Distribución de riesgos por severidad (Alto, Medio, Bajo)
+- Top 5 hallazgos críticos que requieren atención
+- Evaluación por pilar del Well-Architected Framework
 
-**Service Assessments:**
-- Individual findings for each AWS service (EC2, IAM, S3, RDS, Lambda, etc.)
-- Security configuration issues
-- Reliability and availability concerns
-- Cost optimization opportunities
-- Operational excellence recommendations
+**Evaluaciones por Servicio:**
+- Hallazgos individuales para cada servicio AWS (EC2, IAM, S3, RDS, Lambda, etc.)
+- Problemas de configuración de seguridad
+- Preocupaciones de confiabilidad y disponibilidad
+- Oportunidades de optimización de costos
+- Recomendaciones de excelencia operacional
 
-**Remediation Guidance:**
-- Specific steps to address each finding
-- AWS service documentation links
-- Best practice recommendations
-- Priority-based action items
+**Guía de Remediación:**
+- Pasos específicos para abordar cada hallazgo
+- Enlaces a documentación de servicios AWS
+- Recomendaciones de mejores prácticas
+- Elementos de acción basados en prioridad
 
 ---
 
-## Advanced Options
+## Opciones Avanzadas
 
-### Custom Client Branding
+### Personalización con Nombre del Cliente
 
-Personalize the report with your organization name:
+Personalice el reporte con el nombre de su organización:
 
 ```bash
 screener --regions us-east-1 --client "Acme Corporation"
 ```
 
-Output file will be named: `Acme-Corporation_20250115_findings.zip`
+El archivo de salida será nombrado: `Acme-Corporation_20250115_findings.zip`
 
-### Using a Suppression File
+### Uso de Archivo de Supresiones
 
-Exclude known and accepted findings from the report:
+Excluya hallazgos conocidos y aceptados del reporte:
 
 ```bash
-# Create suppressions.json
+# Crear suppressions.json
 cat > suppressions.json << 'EOF'
 {
   "metadata": {
     "version": "1.0",
-    "description": "Approved exceptions for Acme Corp"
+    "description": "Excepciones aprobadas para Acme Corp"
   },
   "suppressions": [
     {
@@ -218,216 +288,231 @@ cat > suppressions.json << 'EOF'
 }
 EOF
 
-# Run assessment with suppressions
+# Ejecutar evaluación con supresiones
 screener --regions us-east-1 --suppress_file ./suppressions.json
 ```
 
-### Tag-Based Resource Filtering
+### Filtrado de Recursos por Tags
 
-Assess only resources matching specific tags:
+Evalúe solo recursos que coincidan con tags específicos:
 
 ```bash
-# Scan only production resources
+# Escanear solo recursos de producción
 screener --regions us-east-1 --tags env=production
 
-# Multiple tag filters
-screener --regions us-east-1 --tags env=prod,department=infrastructure
+# Múltiples filtros de tags
+screener --regions us-east-1 --tags env=prod%department=infrastructure
 ```
 
 ---
 
-## Troubleshooting
+## Solución de Problemas
 
-### Issue: "Access Denied" Error
+### Problema: Error de "Access Denied"
 
-**Problem:** Assessment fails with permission denied messages
+**Problema:** La evaluación falla con mensajes de permiso denegado
 
-**Solution:**
-1. Verify your IAM user has `ReadOnlyAccess` policy attached
-2. Check session credentials:
+**Solución:**
+1. Verifique que su usuario IAM tiene la política `ReadOnlyAccess` adjunta
+2. Verifique credenciales de sesión:
    ```bash
    aws sts get-caller-identity
    ```
-3. If credentials are missing, restart CloudShell
+3. Si las credenciales faltan, reinicie CloudShell. En terminal local, vuelva a iniciar sesión con `aws sso login --profile mi-perfil` (o reconfigure con `aws configure`)
 
-### Issue: Assessment Takes Too Long
+### Problema: La Evaluación Toma Demasiado Tiempo
 
-**Problem:** Scan appears to be hanging or running indefinitely
+**Problema:** El escaneo parece detenerse o ejecutarse indefinidamente
 
-**Solution:**
-1. Press `Ctrl+C` to stop the current scan
-2. Run with fewer regions/services:
+**Solución:**
+1. Presione `Ctrl+C` para detener el escaneo actual
+2. Ejecute con menos regiones/servicios:
    ```bash
    screener --regions us-east-1 --services iam
    ```
-3. Check for network issues
+3. Verifique problemas de red
 
-### Issue: Empty or Missing Report Data
+### Problema: Datos de Reporte Vacíos o Faltantes
 
-**Problem:** Assessment completes but report shows no findings
+**Problema:** La evaluación se completa pero el reporte no muestra hallazgos
 
-**Solution:**
-1. Verify resources exist in the scanned regions:
+**Solución:**
+1. Verifique que existen recursos en las regiones escaneadas:
    ```bash
    aws ec2 describe-instances --region us-east-1
    aws iam list-users
    ```
-2. If resources exist, run with debug output:
+2. Si existen recursos, ejecute con salida de debug:
    ```bash
-   screener --regions us-east-1 --debug
+   screener --regions us-east-1 --debug True
    ```
 
-### Issue: Report File Won't Download
+### Problema: El Archivo de Reporte No Se Descarga
 
-**Problem:** CloudShell download button is unavailable
+**Problema:** El botón de descarga de CloudShell no está disponible
 
-**Solution:**
-1. From CloudShell menu, select **Upload/Download**
-2. Manually navigate to the output file location
-3. Alternatively, provide file path directly to the download dialog
+**Solución:**
+1. Desde el menú de CloudShell, seleccione **Upload/Download**
+2. Navegue manualmente a la ubicación del archivo de salida
+3. Alternativamente, proporcione la ruta del archivo directamente en el diálogo de descarga
+
+### Problema (solo terminal local): Error de multiprocessing en Windows
+
+**Problema:** En Windows aparece `RuntimeError: An attempt has been made to start a new process...` o `AttributeError: 'bool' object has no attribute 'client'`.
+
+**Solución:** Ejecute siempre con `--sequential true`. En una terminal local de Windows este flag es obligatorio; evita el modelo de procesos paralelos que no comparte la sesión de AWS entre procesos.
+```bat
+py main.py --regions us-east-1 --services ec2 --sequential true
+```
+
+### Problema (solo terminal local): No encuentro el output.zip
+
+**Problema:** Buscó el archivo en `/tmp` y no existe.
+
+**Solución:** En terminal local el reporte NO va a `/tmp` (esa ruta es solo de CloudShell). Se genera en la **raíz del proyecto** con el nombre `{CLIENTE}_{FECHA}_findings.zip`. Búsquelo así:
+```bat
+dir *_findings.zip
+```
 
 ---
 
-## Quick Reference
+## Referencia Rápida
 
-### Common Assessment Scenarios
+### Escenarios Comunes de Evaluación
 
-#### Baseline Security Assessment (Fastest)
+#### Evaluación de Seguridad Básica (Más Rápido)
 ```bash
 screener --regions us-east-1 --services iam,ec2
 ```
-Duration: ~3-5 minutes | Focus: Security posture
+Duración: ~3-5 minutos | Enfoque: Postura de seguridad
 
-#### Complete Infrastructure Audit
+#### Auditoría Completa de Infraestructura
 ```bash
 screener --regions ALL
 ```
-Duration: ~30-45 minutes | Focus: Comprehensive review across all services and regions
+Duración: ~30-45 minutos | Enfoque: Revisión comprehensiva de todos los servicios y regiones
 
-#### Compliance Assessment
+#### Evaluación de Cumplimiento
 ```bash
 screener --regions us-east-1,eu-west-1 --services ec2,iam,s3,rds
 ```
-Duration: ~10-15 minutes | Focus: Core compliance domains
+Duración: ~10-15 minutos | Enfoque: Dominios principales de cumplimiento
 
-#### Cost Optimization Review
+#### Revisión de Optimización de Costos
 ```bash
 screener --regions ALL --services ec2,rds,lambda,s3
 ```
-Duration: ~20-30 minutes | Focus: Cost efficiency opportunities
+Duración: ~20-30 minutos | Enfoque: Oportunidades de eficiencia de costos
 
-### Essential Commands
+### Comandos Esenciales
 
 ```bash
-# View all available options
+# Ver todas las opciones disponibles
 screener --help
 
-# List supported AWS services
-screener --list-services
-
-# Activate the assessment environment
+# Activar el entorno de evaluación
 source /tmp/assessment-env/bin/activate
 
-# Deactivate environment
+# Desactivar entorno
 deactivate
 
-# Check current assessment progress
+# Verificar progreso de evaluación actual
 ps aux | grep screener
 
-# Clean up from previous assessments
+# Limpiar evaluaciones previas
 rm -rf output output.zip adminlte/aws/*
 ```
 
 ---
 
-## Success Criteria
+## Criterios de Éxito
 
-Your assessment is complete and successful when:
+Su evaluación está completa y exitosa cuando:
 
-- Assessment tool completes without errors
-- Output file (`output.zip`) is generated
-- HTML report file (`index.html`) is accessible
-- Report displays:
-  - Infrastructure health score
-  - Service assessments
-  - Finding descriptions with remediation steps
-  - Well-Architected Framework evaluation
-
----
-
-## Next Steps After Assessment
-
-### 1. Review Executive Dashboard
-- Examine overall health score and risk distribution
-- Identify top 5 critical findings
-- Note priority action items
-
-### 2. Prioritize Remediation
-- Review findings by severity (High → Medium → Low)
-- Identify quick wins (easy to implement improvements)
-- Plan resource allocation for remediation efforts
-
-### 3. Create Action Plan
-- Assign findings to responsible teams
-- Establish timeline for remediation
-- Define success metrics for each action item
-
-### 4. Track Progress
-- Schedule regular follow-up assessments
-- Monitor remediation progress
-- Re-run assessment to validate improvements
+- La herramienta de evaluación se completa sin errores
+- El archivo de salida (`output.zip`) es generado
+- El archivo de reporte HTML (`index.html`) es accesible
+- El reporte muestra:
+  - Puntaje de salud de la infraestructura
+  - Evaluaciones por servicio
+  - Descripciones de hallazgos con pasos de remediación
+  - Evaluación del Well-Architected Framework
 
 ---
 
-## Support and Documentation
+## Pasos Siguientes Después de la Evaluación
 
-For detailed information about specific findings or remediation steps:
+### 1. Revisar Dashboard Ejecutivo
+- Examinar puntaje de salud general y distribución de riesgos
+- Identificar los 5 hallazgos más críticos
+- Notar elementos de acción prioritarios
 
-1. Click the "Learn More" link in any finding
-2. Review AWS Well-Architected Framework documentation
-3. Consult AWS service-specific best practices guides
+### 2. Priorizar Remediación
+- Revisar hallazgos por severidad (Alto → Medio → Bajo)
+- Identificar victorias rápidas (mejoras fáciles de implementar)
+- Planificar asignación de recursos para esfuerzos de remediación
 
----
+### 3. Crear Plan de Acción
+- Asignar hallazgos a equipos responsables
+- Establecer cronograma para remediación
+- Definir métricas de éxito para cada elemento de acción
 
-## Assessment Data Privacy
-
-The assessment tool:
-
-- **Never modifies** any AWS resources (read-only access)
-- **Does not collect or transmit** sensitive data externally
-- **Generates reports** that should be stored securely
-- **Requires local hosting** of HTML reports (not internet-accessible)
-
-All data remains within your AWS account. No metrics or findings are shared with external services.
-
----
-
-## Frequently Asked Questions
-
-**Q: How often should I run assessments?**
-A: Recommended quarterly for regular environments, or after significant infrastructure changes.
-
-**Q: Can I run this on a production environment?**
-A: Yes. The tool is read-only and performs no modifications. It is safe for production environments.
-
-**Q: What AWS regions are supported?**
-A: All standard AWS regions. Specialized regions (China, GovCloud) may have limitations.
-
-**Q: How is the health score calculated?**
-A: The score uses a weighted algorithm: High-severity findings (3x weight) + Medium findings (1.5x weight) + Low findings (0.5x weight).
-
-**Q: Can I customize the report?**
-A: Yes. You can add your organization name using the `--client` parameter and suppress known exceptions with a suppressions file.
-
-**Q: Is this tool approved for compliance audits?**
-A: It provides supporting documentation for compliance reviews. Always consult with your compliance or audit team for formal requirements.
+### 4. Seguimiento de Progreso
+- Programar evaluaciones de seguimiento regulares
+- Monitorear progreso de remediación
+- Re-ejecutar evaluación para validar mejoras
 
 ---
 
-**Questions or issues?** Review the troubleshooting section above or contact your IT support team.
+## Soporte y Documentación
+
+Para información detallada sobre hallazgos específicos o pasos de remediación:
+
+1. Haga clic en el enlace "Learn More" en cualquier hallazgo
+2. Revise la documentación del AWS Well-Architected Framework
+3. Consulte las guías de mejores prácticas específicas por servicio de AWS
 
 ---
 
-*Last Updated: January 2025*  
-*Tool Version: 2.5.0*  
-*Status: Production Ready*
+## Privacidad de Datos de la Evaluación
+
+La herramienta de evaluación:
+
+- **Nunca modifica** ningún recurso AWS (acceso de solo lectura)
+- **No recopila ni transmite** datos sensibles externamente
+- **Genera reportes** que deben almacenarse de forma segura
+- **Requiere alojamiento local** de reportes HTML (no accesibles por internet)
+
+Todos los datos permanecen dentro de su cuenta AWS. Ninguna métrica o hallazgo se comparte con servicios externos.
+
+---
+
+## Preguntas Frecuentes
+
+**P: ¿Con qué frecuencia debo ejecutar evaluaciones?**  
+R: Se recomienda trimestralmente para entornos regulares, o después de cambios significativos de infraestructura.
+
+**P: ¿Puedo ejecutar esto en un entorno de producción?**  
+R: Sí. La herramienta es de solo lectura y no realiza modificaciones. Es segura para entornos de producción.
+
+**P: ¿Qué regiones AWS están soportadas?**  
+R: Todas las regiones AWS estándar. Regiones especializadas (China, GovCloud) pueden tener limitaciones.
+
+**P: ¿Cómo se calcula el puntaje de salud?**  
+R: El puntaje usa un algoritmo ponderado: hallazgos de severidad Alta (peso 3x) + hallazgos Medios (peso 1.5x) + hallazgos Bajos (peso 0.5x).
+
+**P: ¿Puedo personalizar el reporte?**  
+R: Sí. Puede agregar el nombre de su organización usando el parámetro `--client` y suprimir excepciones conocidas con un archivo de supresiones.
+
+**P: ¿Esta herramienta está aprobada para auditorías de cumplimiento?**  
+R: Proporciona documentación de soporte para revisiones de cumplimiento. Siempre consulte con su equipo de cumplimiento o auditoría para requisitos formales.
+
+---
+
+**¿Preguntas o problemas?** Revise la sección de solución de problemas arriba o contacte a su equipo de soporte de TI.
+
+---
+
+*Última Actualización: Septiembre 2026 (añadido flujo de CLI local)*  
+*Versión de la Herramienta: 2.5.0*  
+*Estado: Producción*

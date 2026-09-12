@@ -87,12 +87,13 @@ Outputs:
         return self.stackName
     
     def getRegion(self):
-        allRegions = Config.get('PARAMS_REGION_ALL')
-        if allRegions == True:
-            r = self.defaultRegion
-        else:
-            params = Config.get("_SS_PARAMS")
-            regions = params['regions'].split(',')
-            r = regions[0]
+        """
+        Always use us-east-1 for the audit trail CF stack.
         
-        return r
+        The CF stack is an empty marker for audit purposes only — it doesn't 
+        need to be in the same region being scanned. Using a fixed region 
+        avoids permission issues when clients scan newer/opt-in regions 
+        (e.g., mx-central-1) where their IAM policies may not yet grant 
+        cloudformation:CreateStack.
+        """
+        return self.defaultRegion
